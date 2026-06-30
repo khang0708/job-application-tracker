@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 
 export default function DashboardPage() {
@@ -41,12 +42,21 @@ export default function DashboardPage() {
             Đăng xuất
           </button>
         </div>
-        <div className="p-6 border rounded-xl bg-gray-50">
+        <div className="p-6 border rounded-xl bg-gray-50 mb-6">
           <h2 className="font-semibold mb-2">Thông tin tài khoản</h2>
           <p className="text-gray-700">Tên: {user.name}</p>
           <p className="text-gray-700">Email: {user.email}</p>
           <p className="text-gray-700">Role: {user.role}</p>
         </div>
+        <Link
+          href="/dashboard/applications"
+          className="block p-5 border rounded-xl hover:bg-blue-50 hover:border-blue-300 transition group"
+        >
+          <h2 className="font-semibold text-gray-900 group-hover:text-blue-700">
+            Job Applications →
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">Manage your Kanban pipeline</p>
+        </Link>
       </div>
     </main>
   );

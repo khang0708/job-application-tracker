@@ -7,7 +7,31 @@
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\frontend\\\\src\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName)",
       "PowerShell(node --version)",
       "PowerShell(pnpm --version 2>&1)",
-      "PowerShell(node \"c:\\\\Users\\\\khang\\\\fullstack-app\\\\.claude\\\\skills\\\\run-fullstack-app\\\\smoke.mjs\")"
+      "PowerShell(node \"c:\\\\Users\\\\khang\\\\fullstack-app\\\\.claude\\\\skills\\\\run-fullstack-app\\\\smoke.mjs\")",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(ls \"c:\\\\Users\\\\khang\\\\.claude\\\\skills\\\\job-application-tracker\\\\references\")",
+      "Read(//c/Users/khang/.claude/skills/job-application-tracker/references/**)",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\backend\\\\uploads\\\\resumes\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\backend\\\\src\\\\companies\\\\dto\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\backend\\\\src\\\\applications\\\\dto\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\frontend\\\\src\\\\lib\\\\api\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\frontend\\\\src\\\\components\\\\applications\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\frontend\\\\src\\\\app\\\\dashboard\\\\applications\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\backend\\\\src\\\\ai\\\\providers\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\backend\\\\src\\\\ai\\\\prompts\")",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\backend\\\\src\" -Recurse -Name | Where-Object { $_ -notmatch \"node_modules\" })",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\frontend\\\\src\" -Recurse -Name | Where-Object { $_ -notmatch \"node_modules\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\khang\\\\fullstack-app\" ; Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"C:\\\\Users\\\\khang\\\\fullstack-app\"; pnpm --filter=backend dev' -WindowStyle Normal)",
+      "PowerShell(cd \"C:\\\\Users\\\\khang\\\\fullstack-app\" ; Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"C:\\\\Users\\\\khang\\\\fullstack-app\"; pnpm --filter=frontend dev' -WindowStyle Normal)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:4000/api\" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop; \"Backend UP: $\\($r.StatusCode\\)\" } catch { \"Backend not ready: $_\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\khang\\\\fullstack-app\" ; Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"C:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\backend\"; node_modules\\\\.bin\\\\nest start --watch' -WindowStyle Normal)",
+      "Bash(chromium-cli navigate *)",
+      "Bash(chromium-cli screenshot *)",
+      "PowerShell(pnpm --version)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process -Id 37892 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)"
     ]
   }
 }

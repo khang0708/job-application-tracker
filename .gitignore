@@ -33,3 +33,6 @@ pnpm-debug.log*
 
 # Docker volumes
 postgres_data/
+
+# Uploaded files
+apps/backend/uploads/
