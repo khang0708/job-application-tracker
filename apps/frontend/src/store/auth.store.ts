@@ -16,6 +16,7 @@ interface AuthState {
   register: (email: string, name: string, password: string) => Promise<void>;
   logout: () => void;
   fetchMe: () => Promise<void>;
+  setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -47,4 +48,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { data } = await api.get('/auth/me');
     set({ user: data, isLoading: false });
   },
+
+  setUser: (user) => set({ user }),
 }));

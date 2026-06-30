@@ -1,8 +1,11 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -39,5 +42,25 @@ export class UsersService {
   async remove(id: string): Promise<void> {
     await this.findOne(id);
     await this.usersRepository.delete(id);
+  }
+
+  async updateProfile(id: string, dto: UpdateProfileDto): Promise<User> {
+    if (dto.email) {
+      const existing = await this.usersRepository.findOne({ where: { email: dto.email } });
+      if (existing && existing.id !== id) {
+        throw new ConflictException('Email already in use');
+      }
+    }
+    // Use update() to bypass @BeforeUpdate password re-hashing
+    await this.usersRepository.update(id, dto);
+    return this.findOne(id);
+  }
+
+  async changePassword(id: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.findOne(id);
+    const valid = await user.comparePassword(dto.currentPassword);
+    if (!valid) throw new UnauthorizedException('Current password is incorrect');
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersRepository.update(id, { password: hashed });
   }
 }
