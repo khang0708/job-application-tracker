@@ -2,13 +2,13 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
 import { updateProfile, changePassword } from '@/lib/api/profile';
+import { DashboardShell } from '@/components/layout/DashboardShell';
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Tên không được để trống'),
@@ -69,60 +69,36 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
-  return (
-    <main className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 transition">
-              ←
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Hồ sơ cá nhân</h1>
-          </div>
-          <button
-            onClick={() => { logout(); router.push('/login'); }}
-            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 transition text-gray-600"
-          >
-            Đăng xuất
-          </button>
-        </div>
+  const inputCls = 'w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/60';
 
-        {/* Avatar placeholder */}
-        <div className="bg-white border rounded-xl p-6 flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-600 shrink-0">
+  return (
+    <DashboardShell>
+      <div className="p-8 max-w-xl">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-blue-500/25">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <p className="font-semibold text-gray-900">{user.name}</p>
+            <h1 className="text-xl font-bold text-gray-900">{user.name}</h1>
             <p className="text-sm text-gray-500">{user.email}</p>
-            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">
-              {user.role}
-            </span>
           </div>
         </div>
 
         {/* Edit profile form */}
-        <div className="bg-white border rounded-xl p-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Cập nhật thông tin</h2>
+        <div className="glass-light rounded-2xl p-6 mb-4">
+          <h2 className="font-semibold text-gray-800 mb-4">Thông tin cá nhân</h2>
           <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
-              <input
-                {...profileForm.register('name')}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Họ và tên</label>
+              <input {...profileForm.register('name')} className={inputCls} />
               {profileForm.formState.errors.name && (
                 <p className="text-xs text-red-500 mt-1">{profileForm.formState.errors.name.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                {...profileForm.register('email')}
-                type="email"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <input {...profileForm.register('email')} type="email" className={inputCls} />
               {profileForm.formState.errors.email && (
                 <p className="text-xs text-red-500 mt-1">{profileForm.formState.errors.email.message}</p>
               )}
@@ -130,60 +106,39 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={profileForm.formState.isSubmitting}
-              className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
             >
-              {profileForm.formState.isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+              {profileForm.formState.isSubmitting ? 'Đang lưu…' : 'Lưu thay đổi'}
             </button>
           </form>
         </div>
 
         {/* Change password form */}
-        <div className="bg-white border rounded-xl p-6">
+        <div className="glass-light rounded-2xl p-6">
           <h2 className="font-semibold text-gray-800 mb-4">Đổi mật khẩu</h2>
           <form onSubmit={passwordForm.handleSubmit(onChangePassword)} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu hiện tại</label>
-              <input
-                {...passwordForm.register('currentPassword')}
-                type="password"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {passwordForm.formState.errors.currentPassword && (
-                <p className="text-xs text-red-500 mt-1">{passwordForm.formState.errors.currentPassword.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
-              <input
-                {...passwordForm.register('newPassword')}
-                type="password"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {passwordForm.formState.errors.newPassword && (
-                <p className="text-xs text-red-500 mt-1">{passwordForm.formState.errors.newPassword.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Xác nhận mật khẩu mới</label>
-              <input
-                {...passwordForm.register('confirmPassword')}
-                type="password"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {passwordForm.formState.errors.confirmPassword && (
-                <p className="text-xs text-red-500 mt-1">{passwordForm.formState.errors.confirmPassword.message}</p>
-              )}
-            </div>
+            {(['currentPassword', 'newPassword', 'confirmPassword'] as const).map((field) => {
+              const labels = { currentPassword: 'Mật khẩu hiện tại', newPassword: 'Mật khẩu mới', confirmPassword: 'Xác nhận mật khẩu mới' };
+              return (
+                <div key={field}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{labels[field]}</label>
+                  <input {...passwordForm.register(field)} type="password" className={inputCls} />
+                  {passwordForm.formState.errors[field] && (
+                    <p className="text-xs text-red-500 mt-1">{passwordForm.formState.errors[field]?.message}</p>
+                  )}
+                </div>
+              );
+            })}
             <button
               type="submit"
               disabled={passwordForm.formState.isSubmitting}
-              className="w-full py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 disabled:opacity-50 transition"
+              className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 disabled:opacity-50 transition"
             >
-              {passwordForm.formState.isSubmitting ? 'Đang lưu...' : 'Đổi mật khẩu'}
+              {passwordForm.formState.isSubmitting ? 'Đang lưu…' : 'Đổi mật khẩu'}
             </button>
           </form>
         </div>
       </div>
-    </main>
+    </DashboardShell>
   );
 }

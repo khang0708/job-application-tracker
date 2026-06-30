@@ -1,3 +1,63 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Liquid Glass utilities ───────────────────────────────────────── */
+@layer utilities {
+  /* Dark glass — for panels on dark mesh backgrounds */
+  .glass {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+  }
+
+  /* Light glass — for cards on light backgrounds */
+  .glass-light {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+
+  /* Inset highlight — top edge light reflection */
+  .glass-shine {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 32px rgba(0, 0, 0, 0.18);
+  }
+}
+
+/* ── Mesh gradient backgrounds ────────────────────────────────────── */
+.mesh-dark {
+  background-color: #080c18;
+  background-image:
+    radial-gradient(ellipse at 15% 40%, rgba(59, 130, 246, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(139, 92, 246, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 55% 88%, rgba(16, 185, 129, 0.12) 0%, transparent 45%),
+    radial-gradient(ellipse at 72% 60%, rgba(59, 130, 246, 0.09) 0%, transparent 40%);
+}
+
+.mesh-light {
+  background-color: #f0f4ff;
+  background-image:
+    radial-gradient(ellipse at 80% 8%,  rgba(99, 102, 241, 0.09) 0%, transparent 50%),
+    radial-gradient(ellipse at 18% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.60) 0%, transparent 70%);
+}
+
+/* ── Glow orbs (landing page decorative) ─────────────────────────── */
+.glow-blue {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.glow-purple {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.30) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
