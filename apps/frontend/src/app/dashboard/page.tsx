@@ -67,6 +67,15 @@ export default function DashboardPage() {
             </h2>
             <p className="text-sm text-gray-500 mt-1">Cập nhật thông tin và đổi mật khẩu</p>
           </Link>
+          <Link
+            href="/dashboard/settings"
+            className="block p-5 border rounded-xl hover:bg-gray-50 hover:border-gray-400 transition group"
+          >
+            <h2 className="font-semibold text-gray-900 group-hover:text-gray-700">
+              Cài đặt AI →
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">Chọn provider: Gemini, OpenAI hoặc Ollama (local)</p>
+          </Link>
         </div>
       </div>
     </main>

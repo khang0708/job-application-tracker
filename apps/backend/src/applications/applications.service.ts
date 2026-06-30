@@ -121,7 +121,7 @@ export class ApplicationsService {
 
     const result = await this.aiService.parseJobDescription({
       jobDescriptionText: app.jobDescription,
-    });
+    }, userId);
 
     // Upsert: replace if already parsed
     const existing = await this.parsedJdRepository.findOne({
@@ -154,7 +154,7 @@ export class ApplicationsService {
       parsedJd: app.parsedJd ?? null,
       language: dto.language ?? 'en',
       maxLength: dto.maxLength,
-    });
+    }, userId);
 
     const coverLetter = this.coverLetterRepository.create({
       applicationId: id,
