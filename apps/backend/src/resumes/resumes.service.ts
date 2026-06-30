@@ -23,7 +23,9 @@ export class ResumesService {
     dto: CreateResumeDto,
     file: Express.Multer.File,
   ): Promise<Resume> {
-    const extractedText = await extractTextFromFile(file.buffer, file.mimetype);
+    // diskStorage doesn't populate file.buffer — read from saved path
+    const fileBuffer = fs.readFileSync(file.path);
+    const extractedText = await extractTextFromFile(fileBuffer, file.mimetype);
 
     const hasExisting = await this.resumesRepository.existsBy({ userId });
 

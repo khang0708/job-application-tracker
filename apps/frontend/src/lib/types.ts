@@ -43,6 +43,7 @@ export interface Resume {
   id: string;
   label: string;
   isDefault: boolean;
+  createdAt: string;
 }
 
 export interface ApplicationDetail extends Application {

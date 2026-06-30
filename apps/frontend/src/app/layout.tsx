@@ -7,8 +7,8 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Fullstack App',
-  description: 'Next.js + NestJS + PostgreSQL',
+  title: 'Job Application Tracker',
+  description: 'Track your job applications and stay organized with our job application tracker app.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

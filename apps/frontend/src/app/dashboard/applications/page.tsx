@@ -38,8 +38,8 @@ export default function ApplicationsPage() {
   return (
     <DashboardShell>
       <div className="flex flex-col h-full">
-        {/* Page header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-white/60 glass-light">
+        {/* Page header — no backdrop-filter here: fixed-position children (AddApplicationDialog) must not have a backdrop-filter ancestor */}
+        <div className="flex items-center justify-between px-8 py-5 border-b border-gray-100 bg-white/80">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Applications</h1>
             <p className="text-xs text-gray-400 mt-0.5">
