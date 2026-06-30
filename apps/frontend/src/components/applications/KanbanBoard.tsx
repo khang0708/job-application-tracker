@@ -13,12 +13,10 @@ import {
 import { toast } from 'sonner';
 import { KanbanColumn } from './KanbanColumn';
 import { ApplicationCard } from './ApplicationCard';
-import { AddApplicationDialog } from './AddApplicationDialog';
-import { ApplicationDetailModal } from './ApplicationDetailModal';
 import { updateApplicationStatus } from '@/lib/api/applications';
 import type { Application, ApplicationStatus, KanbanGroups } from '@/lib/types';
 
-const COLUMNS: { status: ApplicationStatus; label: string }[] = [
+export const COLUMNS: { status: ApplicationStatus; label: string }[] = [
   { status: 'APPLIED', label: 'Applied' },
   { status: 'SCREENING', label: 'Screening' },
   { status: 'INTERVIEW', label: 'Interview' },
@@ -35,33 +33,25 @@ function moveCard(
 ): KanbanGroups {
   let moved: Application | undefined;
   const next = { ...groups } as KanbanGroups;
-
   for (const status of Object.keys(next) as ApplicationStatus[]) {
     next[status] = next[status].filter((a) => {
-      if (a.id === appId) {
-        moved = a;
-        return false;
-      }
+      if (a.id === appId) { moved = a; return false; }
       return true;
     });
   }
-
-  if (moved) {
-    next[newStatus] = [{ ...moved, status: newStatus }, ...next[newStatus]];
-  }
+  if (moved) next[newStatus] = [{ ...moved, status: newStatus }, ...next[newStatus]];
   return next;
 }
 
 interface Props {
-  initialGroups: KanbanGroups;
+  groups: KanbanGroups;
+  onGroupsChange: (g: KanbanGroups) => void;
+  onCardClick: (id: string) => void;
 }
 
-export function KanbanBoard({ initialGroups }: Props) {
-  const [groups, setGroups] = useState<KanbanGroups>(initialGroups);
+export function KanbanBoard({ groups, onGroupsChange, onCardClick }: Props) {
   const [activeApp, setActiveApp] = useState<Application | null>(null);
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
 
-  // Require 5px movement before drag starts — prevents accidental drags on click
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
@@ -70,10 +60,7 @@ export function KanbanBoard({ initialGroups }: Props) {
     const appId = event.active.id as string;
     for (const apps of Object.values(groups)) {
       const found = apps.find((a) => a.id === appId);
-      if (found) {
-        setActiveApp(found);
-        return;
-      }
+      if (found) { setActiveApp(found); return; }
     }
   }
 
@@ -95,59 +82,33 @@ export function KanbanBoard({ initialGroups }: Props) {
     if (currentStatus === newStatus) return;
 
     const snapshot = groups;
-    setGroups((g) => moveCard(g, appId, newStatus));
+    onGroupsChange(moveCard(groups, appId, newStatus));
 
     try {
       await updateApplicationStatus(appId, newStatus);
     } catch {
-      setGroups(snapshot);
+      onGroupsChange(snapshot);
       toast.error('Could not update status — please try again');
     }
   }
 
-  function handleApplicationAdded(app: Application) {
-    setGroups((g) => ({
-      ...g,
-      APPLIED: [app, ...(g.APPLIED ?? [])],
-    }));
-  }
-
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Applications</h1>
-        <AddApplicationDialog onAdded={handleApplicationAdded} />
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {COLUMNS.map(({ status, label }) => (
+          <KanbanColumn
+            key={status}
+            status={status}
+            label={label}
+            applications={groups[status] ?? []}
+            draggingId={activeApp?.id}
+            onCardClick={onCardClick}
+          />
+        ))}
       </div>
-
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {COLUMNS.map(({ status, label }) => (
-            <KanbanColumn
-              key={status}
-              status={status}
-              label={label}
-              applications={groups[status] ?? []}
-              draggingId={activeApp?.id}
-              onCardClick={(id) => setSelectedAppId(id)}
-            />
-          ))}
-        </div>
-
-        <DragOverlay>
-          {activeApp ? <ApplicationCard application={activeApp} overlay /> : null}
-        </DragOverlay>
-      </DndContext>
-
-      {selectedAppId && (
-        <ApplicationDetailModal
-          applicationId={selectedAppId}
-          onClose={() => setSelectedAppId(null)}
-        />
-      )}
-    </div>
+      <DragOverlay>
+        {activeApp ? <ApplicationCard application={activeApp} overlay /> : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

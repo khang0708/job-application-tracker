@@ -47,6 +47,7 @@ export interface Resume {
 
 export interface ApplicationDetail extends Application {
   jobDescription: string;
+  notes: string | null;
   resume: Resume | null;
   parsedJd: ParsedJd | null;
   coverLetters: CoverLetter[];

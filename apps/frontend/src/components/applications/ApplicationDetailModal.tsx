@@ -7,6 +7,7 @@ import {
   getApplicationDetail,
   parseJd,
   generateCoverLetter,
+  updateApplicationNotes,
 } from '@/lib/api/applications';
 import { getResumes } from '@/lib/api/resumes';
 import type { ApplicationDetail, CoverLetter, ParsedJd, Resume } from '@/lib/types';
@@ -24,6 +25,8 @@ export function ApplicationDetailModal({ applicationId, onClose }: Props) {
   const [selectedResumeId, setSelectedResumeId] = useState('');
   const [language, setLanguage] = useState<'en' | 'vi'>('en');
   const [editedLetter, setEditedLetter] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +34,7 @@ export function ApplicationDetailModal({ applicationId, onClose }: Props) {
       ([detail, resumeList]) => {
         setApp(detail);
         setResumes(resumeList);
+        setNotes(detail.notes ?? '');
         const defaultResume =
           detail.resume ?? resumeList.find((r) => r.isDefault) ?? resumeList[0];
         if (defaultResume) setSelectedResumeId(defaultResume.id);
@@ -75,6 +79,20 @@ export function ApplicationDetailModal({ applicationId, onClose }: Props) {
       toast.error('Failed to generate cover letter');
     } finally {
       setIsGenerating(false);
+    }
+  }
+
+  async function handleSaveNotes() {
+    if (!app) return;
+    setIsSavingNotes(true);
+    try {
+      await updateApplicationNotes(app.id, notes);
+      setApp((prev) => prev && { ...prev, notes });
+      toast.success('Đã lưu ghi chú');
+    } catch {
+      toast.error('Không thể lưu ghi chú');
+    } finally {
+      setIsSavingNotes(false);
     }
   }
 
@@ -124,6 +142,27 @@ export function ApplicationDetailModal({ applicationId, onClose }: Props) {
                 <p className="text-sm text-gray-600 whitespace-pre-wrap line-clamp-6">
                   {app.jobDescription}
                 </p>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">Ghi chú</h3>
+                  <button
+                    onClick={handleSaveNotes}
+                    disabled={isSavingNotes}
+                    className="text-xs px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition"
+                  >
+                    {isSavingNotes ? 'Đang lưu…' : 'Lưu ghi chú'}
+                  </button>
+                </div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Thêm ghi chú cho application này… (deadline, contact, interview notes, v.v.)"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none placeholder:text-gray-300"
+                />
               </div>
 
               {/* Parsed Requirements */}

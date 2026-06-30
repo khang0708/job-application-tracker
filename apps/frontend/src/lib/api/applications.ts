@@ -37,6 +37,10 @@ export async function parseJd(id: string): Promise<ApplicationDetail['parsedJd']
   return res.data;
 }
 
+export async function updateApplicationNotes(id: string, notes: string): Promise<void> {
+  await api.patch(`/applications/${id}`, { notes });
+}
+
 export async function generateCoverLetter(
   id: string,
   params: { resumeId: string; language?: 'en' | 'vi'; maxLength?: number },

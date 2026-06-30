@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUrl, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsUrl, IsUUID, Allow } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateApplicationDto {
@@ -21,4 +21,9 @@ export class UpdateApplicationDto {
   @IsOptional()
   @IsUUID()
   resumeId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  notes?: string | null;
 }

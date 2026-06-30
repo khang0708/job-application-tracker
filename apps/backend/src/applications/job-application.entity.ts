@@ -56,6 +56,9 @@ export class JobApplication {
   @Column({ type: 'varchar', default: ApplicationStatus.APPLIED })
   status: ApplicationStatus;
 
+  @Column({ type: 'text', nullable: true })
+  notes: string | null;
+
   @CreateDateColumn()
   appliedAt: Date;
 
