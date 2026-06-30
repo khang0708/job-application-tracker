@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Command codegrap -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command codegraph -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\backend\\\\src\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\khang\\\\fullstack-app\\\\apps\\\\frontend\\\\src\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName)",
+      "PowerShell(node --version)",
+      "PowerShell(pnpm --version 2>&1)",
+      "PowerShell(node \"c:\\\\Users\\\\khang\\\\fullstack-app\\\\.claude\\\\skills\\\\run-fullstack-app\\\\smoke.mjs\")"
+    ]
+  }
+}
