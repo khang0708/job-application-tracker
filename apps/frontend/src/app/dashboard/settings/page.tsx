@@ -50,7 +50,7 @@ export default function SettingsPage() {
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult>(null);
 
-  const { register, handleSubmit, watch, setValue, control, formState } = useForm<FormValues>({
+  const { register, handleSubmit, watch, setValue, getValues, control, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       provider: 'gemini',
@@ -76,7 +76,7 @@ export default function SettingsPage() {
     }).finally(() => setIsLoading(false));
   }, [token, router, setValue]);
 
-  async function onSave(data: FormValues) {
+  async function doSave(data: FormValues): Promise<boolean> {
     try {
       await saveAiConfig({
         provider: data.provider,
@@ -85,24 +85,50 @@ export default function SettingsPage() {
         ollamaBaseUrl: data.ollamaBaseUrl || 'http://localhost:11434',
         ollamaModel: data.ollamaModel || 'llama3.2',
       });
-      toast.success('Đã lưu cấu hình AI');
       setTestResult(null);
-    } catch {
-      toast.error('Không thể lưu cấu hình');
+      return true;
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Lỗi không xác định';
+      toast.error(`Không thể lưu cấu hình: ${msg}`);
+      return false;
     }
+  }
+
+  async function onSave(data: FormValues) {
+    const ok = await doSave(data);
+    if (ok) toast.success('Đã lưu cấu hình AI');
   }
 
   async function onTest() {
     setIsTesting(true);
     setTestResult(null);
+
+    // Auto-save current form values before testing so the test always uses what's on-screen
+    const values = getValues();
+    try {
+      await saveAiConfig({
+        provider: values.provider,
+        geminiApiKey: values.geminiApiKey || null,
+        openaiApiKey: values.openaiApiKey || null,
+        ollamaBaseUrl: values.ollamaBaseUrl || 'http://localhost:11434',
+        ollamaModel: values.ollamaModel || 'llama3.2',
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Lỗi không xác định';
+      setTestResult({ success: false, provider, error: `Không thể lưu cấu hình trước khi test: ${msg}` });
+      setIsTesting(false);
+      return;
+    }
+
     try {
       const result = await testAiConfig();
       setTestResult(result);
       if (result.success) toast.success(`Kết nối thành công với ${PROVIDER_INFO[result.provider as keyof typeof PROVIDER_INFO]?.label ?? result.provider}`);
       else toast.error(`Kết nối thất bại: ${result.error}`);
     } catch (err: any) {
-      setTestResult({ success: false, provider, error: err?.response?.data?.message ?? 'Lỗi kết nối' });
-      toast.error('Không thể test kết nối');
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Lỗi kết nối';
+      setTestResult({ success: false, provider, error: msg });
+      toast.error(`Không thể test kết nối: ${msg}`);
     } finally {
       setIsTesting(false);
     }

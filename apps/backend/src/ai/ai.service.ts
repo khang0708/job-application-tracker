@@ -26,6 +26,11 @@ export class AiService {
     private readonly configService: ConfigService,
   ) {}
 
+  async complete(prompt: string, userId?: string): Promise<string> {
+    const completer = await this.resolveCompleter(userId);
+    return completer(prompt);
+  }
+
   async parseJobDescription(params: ParseJdParams, userId?: string): Promise<ParsedJdResult> {
     const complete = await this.resolveCompleter(userId);
     const raw = await complete(buildJdParsingPrompt(params));

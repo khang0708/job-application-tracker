@@ -11,6 +11,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
+import { ChatWidget } from '@/components/chat/ChatWidget';
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -89,6 +90,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 overflow-auto">{children}</main>
+
+      {/* AI Chat widget — available across all dashboard pages */}
+      <ChatWidget />
     </div>
   );
 }

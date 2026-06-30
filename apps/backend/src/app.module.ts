@@ -9,6 +9,7 @@ import { ResumesModule } from './resumes/resumes.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { AiModule } from './ai/ai.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AiModule } from './ai/ai.module';
     CompaniesModule,
     ApplicationsModule,
     AiModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
