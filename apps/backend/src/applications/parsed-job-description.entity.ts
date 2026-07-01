@@ -32,6 +32,24 @@ export class ParsedJobDescription {
   @Column({ type: 'text', array: true, default: '{}' })
   keyRequirements: string[];
 
+  @Column({ type: 'text', array: true, default: '{}' })
+  responsibilities: string[];
+
+  @Column({ type: 'text', array: true, default: '{}' })
+  benefits: string[];
+
+  @Column({ nullable: true })
+  salary: string | null;
+
+  @Column({ nullable: true })
+  workMode: string | null;
+
+  @Column({ nullable: true })
+  location: string | null;
+
+  @Column({ nullable: true })
+  yearsOfExperience: string | null;
+
   @CreateDateColumn()
   parsedAt: Date;
 }

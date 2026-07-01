@@ -139,7 +139,15 @@ export default function ProfilePage() {
     }
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <DashboardShell>
+        <div className="flex items-center justify-center h-full text-sm text-gray-400">
+          Đang tải…
+        </div>
+      </DashboardShell>
+    );
+  }
 
   const inputCls = 'w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/60';
 

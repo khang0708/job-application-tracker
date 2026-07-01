@@ -36,7 +36,15 @@ export default function DashboardPage() {
     getKanbanGroups().then((g) => setStats(computeStats(g))).catch(() => {});
   }, [token, user, router, fetchMe]);
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <DashboardShell>
+        <div className="flex items-center justify-center h-full text-sm text-gray-400">
+          Đang tải…
+        </div>
+      </DashboardShell>
+    );
+  }
 
   const STAT_CARDS = [
     { label: 'Tổng ứng tuyển', value: stats?.total ?? '—', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },

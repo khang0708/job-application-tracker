@@ -29,4 +29,9 @@ export class CompaniesService {
       this.companiesRepository.create({ name }),
     );
   }
+
+  async patch(id: string, data: Partial<Pick<Company, 'domain' | 'analysis'>>): Promise<Company> {
+    await this.companiesRepository.update(id, data);
+    return this.companiesRepository.findOneOrFail({ where: { id } });
+  }
 }

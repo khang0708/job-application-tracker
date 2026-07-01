@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,12 +11,15 @@ import * as fs from 'fs';
 import { Resume } from './resume.entity';
 import { CreateResumeDto } from './dto/create-resume.dto';
 import { extractTextFromFile } from './resumes.parser';
+import { extractPdfTextWithOcr } from './pdf-ocr';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class ResumesService {
   constructor(
     @InjectRepository(Resume)
     private resumesRepository: Repository<Resume>,
+    private aiService: AiService,
   ) {}
 
   async create(
@@ -23,9 +27,27 @@ export class ResumesService {
     dto: CreateResumeDto,
     file: Express.Multer.File,
   ): Promise<Resume> {
-    // diskStorage doesn't populate file.buffer — read from saved path
     const fileBuffer = fs.readFileSync(file.path);
-    const extractedText = await extractTextFromFile(fileBuffer, file.mimetype);
+
+    const isGoodText = (t: string) =>
+      t.length >= 100 && (t.match(/[a-zA-ZÀ-ÿ0-9]/g) ?? []).length / t.length >= 0.3;
+
+    let extractedText = await extractTextFromFile(fileBuffer, file.mimetype).catch(() => '');
+
+    // Fallback for custom-font / image PDFs: local OCR via tesseract
+    if (!isGoodText(extractedText) && file.mimetype === 'application/pdf') {
+      const ocrText = await extractPdfTextWithOcr(fileBuffer).catch(() => '');
+      if (ocrText) extractedText = ocrText;
+    }
+
+    if (!isGoodText(extractedText)) {
+      throw new BadRequestException(
+        'Không thể đọc nội dung CV — file này dùng font tùy chỉnh hoặc là ảnh scan. Hãy upload lại dưới dạng DOCX hoặc PDF có text thật (copy được).',
+      );
+    }
+
+    // Normalize to clean Markdown for better AI parsing downstream
+    extractedText = await this.aiService.normalizeCvText(extractedText, userId).catch(() => extractedText);
 
     const hasExisting = await this.resumesRepository.existsBy({ userId });
 

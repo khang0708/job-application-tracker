@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUrl, IsUUID, Allow } from 'class-validator';
+import { IsString, IsOptional, IsUrl, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateApplicationDto {
@@ -10,11 +10,16 @@ export class UpdateApplicationDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  companyName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   jobDescription?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUrl()
+  @IsUrl({}, { message: 'sourceUrl must be a valid URL' })
   sourceUrl?: string;
 
   @ApiPropertyOptional()

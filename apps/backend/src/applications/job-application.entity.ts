@@ -16,6 +16,7 @@ import { Resume } from '../resumes/resume.entity';
 import { ApplicationStatus } from './application-status.enum';
 import { ParsedJobDescription } from './parsed-job-description.entity';
 import { CoverLetter } from './cover-letter.entity';
+import { JobMatch } from './job-match.entity';
 
 @Entity('job_applications')
 @Index(['userId', 'status'])
@@ -67,6 +68,9 @@ export class JobApplication {
 
   @OneToOne(() => ParsedJobDescription, (p) => p.application, { nullable: true })
   parsedJd: ParsedJobDescription | null;
+
+  @OneToOne(() => JobMatch, (m) => m.application, { nullable: true })
+  jobMatch: JobMatch | null;
 
   @OneToMany(() => CoverLetter, (cl) => cl.application)
   coverLetters: CoverLetter[];

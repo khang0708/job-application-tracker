@@ -35,7 +35,7 @@ const storage = diskStorage({
 @UseGuards(JwtAuthGuard)
 @Controller('resumes')
 export class ResumesController {
-  constructor(private readonly resumesService: ResumesService) {}
+  constructor(private readonly resumesService: ResumesService) { }
 
   @Post()
   @ApiConsumes('multipart/form-data')
@@ -49,7 +49,8 @@ export class ResumesController {
           new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5 MB
           new FileTypeValidator({
             fileType:
-              /(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document)/,
+              /(application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)/,
+            skipMagicNumbersValidation: true,
           }),
         ],
       }),

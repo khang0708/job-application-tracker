@@ -6,9 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as fs from 'fs';
 import { JobApplication } from './job-application.entity';
 import { ParsedJobDescription } from './parsed-job-description.entity';
 import { CoverLetter } from './cover-letter.entity';
+import { JobMatch } from './job-match.entity';
+import { Company } from '../companies/company.entity';
 import { ApplicationStatus } from './application-status.enum';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
@@ -17,6 +20,8 @@ import { GenerateCoverLetterDto } from './dto/generate-cover-letter.dto';
 import { CompaniesService } from '../companies/companies.service';
 import { AiService } from '../ai/ai.service';
 import { ResumesService } from '../resumes/resumes.service';
+import { extractTextFromFile } from '../resumes/resumes.parser';
+import { extractPdfTextWithOcr } from '../resumes/pdf-ocr';
 
 @Injectable()
 export class ApplicationsService {
@@ -27,6 +32,8 @@ export class ApplicationsService {
     private parsedJdRepository: Repository<ParsedJobDescription>,
     @InjectRepository(CoverLetter)
     private coverLetterRepository: Repository<CoverLetter>,
+    @InjectRepository(JobMatch)
+    private jobMatchRepository: Repository<JobMatch>,
     private companiesService: CompaniesService,
     private aiService: AiService,
     private resumesService: ResumesService,
@@ -54,7 +61,7 @@ export class ApplicationsService {
     if (status) where.status = status;
     return this.applicationsRepository.find({
       where,
-      relations: ['company'],
+      relations: ['company', 'jobMatch'],
       order: { appliedAt: 'DESC' },
       select: {
         id: true,
@@ -63,7 +70,8 @@ export class ApplicationsService {
         sourceUrl: true,
         appliedAt: true,
         updatedAt: true,
-        company: { id: true, name: true },
+        company: { id: true, name: true, domain: true },
+        jobMatch: { score: true },
       },
     });
   }
@@ -71,7 +79,7 @@ export class ApplicationsService {
   async findOne(id: string, userId: string): Promise<JobApplication> {
     const app = await this.applicationsRepository.findOne({
       where: { id },
-      relations: ['company', 'resume', 'parsedJd', 'coverLetters'],
+      relations: ['company', 'resume', 'parsedJd', 'jobMatch', 'coverLetters'],
     });
     if (!app) throw new NotFoundException('Application not found');
     if (app.userId !== userId) throw new ForbiddenException();
@@ -86,7 +94,12 @@ export class ApplicationsService {
 
   async update(id: string, userId: string, dto: UpdateApplicationDto): Promise<JobApplication> {
     const app = await this.findOne(id, userId);
-    Object.assign(app, dto);
+    const { companyName, ...rest } = dto;
+    if (companyName) {
+      const company = await this.companiesService.findOrCreate(companyName);
+      app.companyId = company.id;
+    }
+    Object.assign(app, rest);
     return this.applicationsRepository.save(app);
   }
 
@@ -98,7 +111,7 @@ export class ApplicationsService {
   async findGroupedByStatus(userId: string): Promise<Record<ApplicationStatus, JobApplication[]>> {
     const all = await this.applicationsRepository.find({
       where: { userId },
-      relations: ['company'],
+      relations: ['company', 'jobMatch'],
       order: { appliedAt: 'DESC' },
       select: {
         id: true,
@@ -107,7 +120,8 @@ export class ApplicationsService {
         sourceUrl: true,
         appliedAt: true,
         updatedAt: true,
-        company: { id: true, name: true },
+        company: { id: true, name: true, domain: true },
+        jobMatch: { score: true },
       },
     });
     const grouped = {} as Record<ApplicationStatus, JobApplication[]>;
@@ -134,6 +148,143 @@ export class ApplicationsService {
 
     const parsedJd = this.parsedJdRepository.create({ applicationId: id, ...result });
     return this.parsedJdRepository.save(parsedJd);
+  }
+
+  async matchCv(id: string, userId: string, resumeId: string): Promise<JobMatch> {
+    const app = await this.findOne(id, userId);
+    const resume = await this.resumesService.findOne(resumeId, userId);
+
+    let resumeText = resume.extractedText ?? '';
+
+    const isGoodText = (t: string) => {
+      if (t.length < 100) return false;
+      const ratio = (t.match(/[a-zA-ZÀ-ÿ0-9]/g) ?? []).length / t.length;
+      return ratio >= 0.3;
+    };
+
+    if (!isGoodText(resumeText) && resume.fileUrl && fs.existsSync(resume.fileUrl)) {
+      const buf = fs.readFileSync(resume.fileUrl);
+      const ext = resume.fileUrl.split('.').pop()?.toLowerCase() ?? '';
+
+      // 1. Re-run text extraction from original file (covers DOCX + PDF with real text)
+      const mimeMap: Record<string, string> = {
+        pdf: 'application/pdf',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        doc: 'application/msword',
+      };
+      if (mimeMap[ext]) {
+        const reExtracted = await extractTextFromFile(buf, mimeMap[ext]).catch(() => '');
+        if (isGoodText(reExtracted)) resumeText = reExtracted;
+      }
+
+      // 2. PDF-specific fallback: local OCR via tesseract
+      if (!isGoodText(resumeText) && ext === 'pdf') {
+        const ocrText = await extractPdfTextWithOcr(buf).catch(() => '');
+        if (ocrText) resumeText = ocrText;
+      }
+    }
+
+    if (!isGoodText(resumeText)) {
+      throw new BadRequestException(
+        'Không thể đọc nội dung CV — file này dùng font tùy chỉnh hoặc là ảnh scan. Hãy upload lại dưới dạng DOCX hoặc PDF có text thật (copy được).',
+      );
+    }
+
+    const result = await this.aiService.matchCvJd({
+      resumeText,
+      jobDescriptionText: app.jobDescription,
+    }, userId);
+
+    const existing = await this.jobMatchRepository.findOne({ where: { applicationId: id } });
+    if (existing) {
+      Object.assign(existing, { ...result, resumeId });
+      return this.jobMatchRepository.save(existing);
+    }
+
+    const match = this.jobMatchRepository.create({ applicationId: id, resumeId, ...result });
+    return this.jobMatchRepository.save(match);
+  }
+
+  async analyzeCompany(id: string, userId: string): Promise<Company> {
+    const app = await this.findOne(id, userId);
+
+    // Resolve domain first so we can fetch the homepage
+    let domain: string | null = null;
+    if (app.sourceUrl) {
+      try {
+        const parsed = new URL(app.sourceUrl);
+        domain = parsed.hostname.replace(/^www\./, '');
+      } catch { /* ignore */ }
+    }
+    // Use stored domain if sourceUrl didn't yield one
+    if (!domain && app.company.domain) domain = app.company.domain;
+
+    const webContext = await this.fetchCompanyWebContext(app.company.name, domain);
+
+    const result = await this.aiService.analyzeCompany({
+      companyName: app.company.name,
+      jobDescriptionText: app.jobDescription,
+      sourceUrl: app.sourceUrl,
+      webContext: webContext || undefined,
+    }, userId);
+
+    const finalDomain = domain || result.domain || null;
+    const { domain: _d, ...analysisFields } = result;
+    return this.companiesService.patch(app.company.id, {
+      domain: finalDomain,
+      analysis: analysisFields,
+    });
+  }
+
+  private async fetchCompanyWebContext(companyName: string, domain: string | null): Promise<string> {
+    const parts: string[] = [];
+    const timeout = (ms: number) => AbortSignal.timeout(ms);
+
+    // 1. DuckDuckGo Instant Answer — free, no API key
+    try {
+      const q = encodeURIComponent(`${companyName} company`);
+      const res = await fetch(
+        `https://api.duckduckgo.com/?q=${q}&format=json&no_html=1&skip_disambig=1`,
+        { signal: timeout(5000) },
+      );
+      const data = await res.json() as Record<string, unknown>;
+      if (typeof data.AbstractText === 'string' && data.AbstractText.length > 20) {
+        parts.push(`[DuckDuckGo] ${data.AbstractText}`);
+      }
+    } catch { /* timeout or network error — skip */ }
+
+    // 2. Company homepage — scrape visible text
+    if (domain) {
+      try {
+        const res = await fetch(`https://${domain}`, {
+          signal: timeout(6000),
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JobTrackerBot/1.0)' },
+        });
+        const html = await res.text();
+        const text = html
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 3000);
+        if (text.length > 100) parts.push(`[Homepage ${domain}] ${text}`);
+      } catch { /* timeout or SSL error — skip */ }
+    }
+
+    return parts.join('\n\n');
+  }
+
+  async translateJd(id: string, userId: string): Promise<{ keyRequirements: string[]; responsibilities: string[]; benefits: string[] }> {
+    const app = await this.findOne(id, userId);
+    if (!app.parsedJd) {
+      throw new BadRequestException('Parse the JD first before translating');
+    }
+    return this.aiService.translateJd({
+      keyRequirements: app.parsedJd.keyRequirements,
+      responsibilities: app.parsedJd.responsibilities ?? [],
+      benefits: app.parsedJd.benefits ?? [],
+    }, userId);
   }
 
   async generateCoverLetter(

@@ -16,6 +16,12 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { GenerateCoverLetterDto } from './dto/generate-cover-letter.dto';
+import { IsUUID } from 'class-validator';
+
+class MatchCvDto {
+  @IsUUID()
+  resumeId: string;
+}
 import { ApplicationStatus } from './application-status.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -70,9 +76,24 @@ export class ApplicationsController {
     return this.applicationsService.remove(id, req.user.id);
   }
 
+  @Post(':id/analyze-company')
+  analyzeCompany(@Request() req, @Param('id') id: string) {
+    return this.applicationsService.analyzeCompany(id, req.user.id);
+  }
+
   @Post(':id/parse-jd')
   parseJd(@Request() req, @Param('id') id: string) {
     return this.applicationsService.parseJd(id, req.user.id);
+  }
+
+  @Post(':id/translate-jd')
+  translateJd(@Request() req, @Param('id') id: string) {
+    return this.applicationsService.translateJd(id, req.user.id);
+  }
+
+  @Post(':id/match-cv')
+  matchCv(@Request() req, @Param('id') id: string, @Body() dto: MatchCvDto) {
+    return this.applicationsService.matchCv(id, req.user.id, dto.resumeId);
   }
 
   @Post(':id/cover-letter')

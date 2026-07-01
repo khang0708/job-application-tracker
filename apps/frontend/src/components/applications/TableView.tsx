@@ -26,12 +26,20 @@ interface Props {
   groups: KanbanGroups;
   onGroupsChange: (g: KanbanGroups) => void;
   onCardClick: (id: string) => void;
+  sortByMatch?: boolean;
 }
 
-export function TableView({ groups, onGroupsChange, onCardClick }: Props) {
+export function TableView({ groups, onGroupsChange, onCardClick, sortByMatch }: Props) {
   const apps: Application[] = Object.values(groups)
     .flat()
-    .sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
+    .sort((a, b) => {
+      if (sortByMatch) {
+        const sa = a.jobMatch?.score ?? -1;
+        const sb = b.jobMatch?.score ?? -1;
+        if (sa !== sb) return sb - sa;
+      }
+      return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime();
+    });
 
   async function handleDelete(app: Application) {
     if (!confirm(`Xóa "${app.jobTitle}" tại ${app.company.name}?`)) return;
@@ -63,6 +71,7 @@ export function TableView({ groups, onGroupsChange, onCardClick }: Props) {
             <th className="px-4 py-3">Vị trí</th>
             <th className="px-4 py-3">Trạng thái</th>
             <th className="px-4 py-3">Ngày ứng tuyển</th>
+            <th className="px-4 py-3 w-20">Phù hợp</th>
             <th className="px-4 py-3 w-24">Thao tác</th>
           </tr>
         </thead>
@@ -84,6 +93,13 @@ export function TableView({ groups, onGroupsChange, onCardClick }: Props) {
               </td>
               <td className="px-4 py-3 text-gray-500">
                 {new Date(app.appliedAt).toLocaleDateString('vi-VN')}
+              </td>
+              <td className="px-4 py-3">
+                {app.jobMatch?.score != null && (() => {
+                  const s = app.jobMatch!.score;
+                  const cls = s >= 70 ? 'bg-green-100 text-green-700' : s >= 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-500';
+                  return <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${cls}`}>{s}%</span>;
+                })()}
               </td>
               <td className="px-4 py-3">
                 <button

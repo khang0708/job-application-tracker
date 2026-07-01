@@ -31,7 +31,11 @@
       "PowerShell(pnpm --version)",
       "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue)",
       "PowerShell(Get-Process -Id 37892 -ErrorAction SilentlyContinue)",
-      "PowerShell(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)"
+      "PowerShell(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)",
+      "Bash(pnpm --filter=backend dev)",
+      "Bash(echo \"Backend PID: $!\")",
+      "Bash(pnpm --filter=frontend dev)",
+      "Bash(echo \"Frontend PID: $!\")"
     ]
   }
 }

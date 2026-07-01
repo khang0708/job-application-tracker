@@ -6,3 +6,5 @@ allowBuilds:
   '@nestjs/core': true
   protobufjs: true
   unrs-resolver: true
+  canvas: true
+  'tesseract.js': true

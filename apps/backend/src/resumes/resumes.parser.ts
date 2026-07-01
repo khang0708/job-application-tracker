@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse').default ?? require('pdf-parse');
+const pdfParse = require('pdf-parse');
 import * as mammoth from 'mammoth';
 
 export async function extractTextFromFile(
