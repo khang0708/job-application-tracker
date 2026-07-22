@@ -49,4 +49,35 @@ describe('N8nConfigService', () => {
     const config = await service.getConfig('user-1');
     expect(config).toEqual({ configured: false, apiKeyPrefix: null });
   });
+
+  it('overwrites existing api key when config already exists', async () => {
+    const oldApiKeyHash = 'old-hash-value-12345';
+    const oldApiKeyPrefix = 'old_prefix_123';
+    const existingConfig = {
+      id: 'config-1',
+      userId: 'user-1',
+      apiKeyHash: oldApiKeyHash,
+      apiKeyPrefix: oldApiKeyPrefix,
+    } as UserN8nConfig;
+
+    repo.findOne.mockResolvedValueOnce(existingConfig);
+    const { apiKey, apiKeyPrefix: returnedPrefix } = await service.regenerate('user-1');
+
+    // Verify repo.create was NOT called in this branch
+    expect(repo.create).not.toHaveBeenCalled();
+
+    // Verify repo.save was called exactly once
+    expect(repo.save).toHaveBeenCalledTimes(1);
+    const savedObject = (repo.save as jest.Mock).mock.calls[0][0];
+
+    // Should be the same object instance (in-place mutation)
+    expect(savedObject).toBe(existingConfig);
+
+    // Old hash should have been replaced with a new one
+    expect(savedObject.apiKeyHash).not.toBe(oldApiKeyHash);
+
+    // New prefix should match the first 12 chars of the returned apiKey
+    expect(returnedPrefix).toBe(apiKey.slice(0, 12));
+    expect(savedObject.apiKeyPrefix).toBe(returnedPrefix);
+  });
 });
