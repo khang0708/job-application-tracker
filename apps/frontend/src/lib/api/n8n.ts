@@ -16,10 +16,12 @@ export async function getPendingSuggestions(): Promise<EmailSuggestion[]> {
   return res.data;
 }
 
-export async function acceptSuggestion(id: string): Promise<void> {
-  await api.post(`/integrations/n8n/suggestions/${id}/accept`);
+export async function acceptSuggestion(id: string): Promise<EmailSuggestion> {
+  const res = await api.post<EmailSuggestion>(`/integrations/n8n/suggestions/${id}/accept`);
+  return res.data;
 }
 
-export async function dismissSuggestion(id: string): Promise<void> {
-  await api.post(`/integrations/n8n/suggestions/${id}/dismiss`);
+export async function dismissSuggestion(id: string): Promise<EmailSuggestion> {
+  const res = await api.post<EmailSuggestion>(`/integrations/n8n/suggestions/${id}/dismiss`);
+  return res.data;
 }

@@ -27,18 +27,19 @@ const NAV = [
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, token } = useAuthStore();
 
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
+    if (!token) return;
     function refresh() {
       getPendingSuggestions().then((list) => setPendingCount(list.length)).catch(() => {});
     }
     refresh();
     const interval = setInterval(refresh, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [token]);
 
   function handleLogout() {
     logout();
@@ -78,7 +79,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <span className="flex-1">{label}</span>
                 {showBadge && (
                   <span className="bg-amber-500 text-white text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none">
-                    {pendingCount}
+                    {pendingCount > 99 ? '99+' : pendingCount}
                   </span>
                 )}
               </Link>

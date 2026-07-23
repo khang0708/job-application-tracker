@@ -27,15 +27,14 @@ export class EmailSuggestionsService {
     userId: string,
     dto: EmailEventInput,
   ): Promise<{ matched: boolean; suggestionId?: string }> {
-    const allApps = await this.applicationsService.findAll(userId);
-    const activeApps = allApps.filter(
-      (a) => a.status !== ApplicationStatus.REJECTED && a.status !== ApplicationStatus.WITHDRAWN,
-    );
-    if (activeApps.length === 0) return { matched: false };
-
-    let classification;
     try {
-      classification = await this.aiService.classifyEmail(
+      const allApps = await this.applicationsService.findAll(userId);
+      const activeApps = allApps.filter(
+        (a) => a.status !== ApplicationStatus.REJECTED && a.status !== ApplicationStatus.WITHDRAWN,
+      );
+      if (activeApps.length === 0) return { matched: false };
+
+      const classification = await this.aiService.classifyEmail(
         {
           emailFrom: dto.from,
           emailSubject: dto.subject,
@@ -49,36 +48,36 @@ export class EmailSuggestionsService {
         },
         userId,
       );
+
+      if (
+        !classification.applicationId ||
+        !classification.suggestedStatus ||
+        classification.confidence < CONFIDENCE_THRESHOLD
+      ) {
+        return { matched: false };
+      }
+
+      const matchedApp = activeApps.find((a) => a.id === classification.applicationId);
+      if (!matchedApp) return { matched: false };
+
+      const suggestion = this.repo.create({
+        userId,
+        applicationId: matchedApp.id,
+        companyName: matchedApp.company.name,
+        jobTitle: matchedApp.jobTitle,
+        suggestedStatus: classification.suggestedStatus,
+        currentStatusSnapshot: matchedApp.status,
+        confidence: classification.confidence,
+        reasoning: classification.reasoning,
+        emailFrom: dto.from,
+        emailSubject: dto.subject,
+        resolutionStatus: EmailSuggestionResolution.PENDING,
+      });
+      const saved = await this.repo.save(suggestion);
+      return { matched: true, suggestionId: saved.id };
     } catch {
       return { matched: false };
     }
-
-    if (
-      !classification.applicationId ||
-      !classification.suggestedStatus ||
-      classification.confidence < CONFIDENCE_THRESHOLD
-    ) {
-      return { matched: false };
-    }
-
-    const matchedApp = activeApps.find((a) => a.id === classification.applicationId);
-    if (!matchedApp) return { matched: false };
-
-    const suggestion = this.repo.create({
-      userId,
-      applicationId: matchedApp.id,
-      companyName: matchedApp.company.name,
-      jobTitle: matchedApp.jobTitle,
-      suggestedStatus: classification.suggestedStatus,
-      currentStatusSnapshot: matchedApp.status,
-      confidence: classification.confidence,
-      reasoning: classification.reasoning,
-      emailFrom: dto.from,
-      emailSubject: dto.subject,
-      resolutionStatus: EmailSuggestionResolution.PENDING,
-    });
-    const saved = await this.repo.save(suggestion);
-    return { matched: true, suggestionId: saved.id };
   }
 
   listPending(userId: string): Promise<EmailSuggestion[]> {

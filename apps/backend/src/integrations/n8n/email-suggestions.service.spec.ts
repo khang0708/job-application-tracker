@@ -99,6 +99,37 @@ describe('EmailSuggestionsService', () => {
       expect(repo.save).not.toHaveBeenCalled();
     });
 
+    it('swallows applicationsService errors and reports no match instead of throwing', async () => {
+      applicationsService.findAll.mockRejectedValueOnce(new Error('db unavailable'));
+
+      const result = await service.handleEmailEvent('user-1', {
+        from: 'hr@acme.com',
+        subject: 'Interview',
+        body: 'body',
+      });
+
+      expect(result.matched).toBe(false);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('swallows repo.save errors and reports no match instead of throwing', async () => {
+      aiService.classifyEmail.mockResolvedValueOnce({
+        applicationId: 'app-1',
+        suggestedStatus: ApplicationStatus.INTERVIEW,
+        confidence: 85,
+        reasoning: 'Interview scheduled',
+      });
+      repo.save.mockRejectedValueOnce(new Error('db unavailable'));
+
+      const result = await service.handleEmailEvent('user-1', {
+        from: 'hr@acme.com',
+        subject: 'Interview',
+        body: 'body',
+      });
+
+      expect(result.matched).toBe(false);
+    });
+
     it('creates a suggestion when confidence is exactly at the threshold (60)', async () => {
       aiService.classifyEmail.mockResolvedValueOnce({
         applicationId: 'app-1',
