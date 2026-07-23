@@ -11,6 +11,8 @@ import { buildCvJdMatchPrompt, MatchCvJdParams, MatchCvJdResult } from './prompt
 import { buildCoverLetterPrompt, GenerateCoverLetterParams } from './prompts/cover-letter.prompt';
 import { buildCompanyAnalysisPrompt, AnalyzeCompanyParams, CompanyAnalysisAiResult } from './prompts/company-analysis.prompt';
 import { buildCvNormalizePrompt } from './prompts/cv-normalize.prompt';
+import { buildEmailClassificationPrompt, ClassifyEmailParams } from './prompts/email-classification.prompt';
+import { ApplicationStatus } from '../applications/application-status.enum';
 
 export interface ParsedJdResult {
   requiredSkills: string[];
@@ -23,6 +25,13 @@ export interface ParsedJdResult {
   workMode: string | null;
   location: string | null;
   yearsOfExperience: string | null;
+}
+
+export interface ClassifyEmailResult {
+  applicationId: string | null;
+  suggestedStatus: ApplicationStatus | null;
+  confidence: number;
+  reasoning: string;
 }
 
 type Completer = (prompt: string) => Promise<string>;
@@ -136,6 +145,35 @@ export class AiService {
     const complete = await this.resolveCompleter(userId);
     const raw = await complete(buildCoverLetterPrompt(params));
     return raw.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
+  }
+
+  async classifyEmail(params: ClassifyEmailParams, userId?: string): Promise<ClassifyEmailResult> {
+    const complete = await this.resolveCompleter(userId);
+    const raw = await complete(buildEmailClassificationPrompt(params));
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      throw new BadGatewayException('AI returned invalid JSON for email classification');
+    }
+    const p = parsed as Record<string, unknown>;
+    const validStatuses = Object.values(ApplicationStatus) as string[];
+    const suggestedStatus =
+      typeof p.suggestedStatus === 'string' && validStatuses.includes(p.suggestedStatus)
+        ? (p.suggestedStatus as ApplicationStatus)
+        : null;
+    const validApplicationIds = params.applications.map((a) => a.id);
+    const applicationId =
+      typeof p.applicationId === 'string' && validApplicationIds.includes(p.applicationId)
+        ? p.applicationId
+        : null;
+    return {
+      applicationId,
+      suggestedStatus,
+      confidence: typeof p.confidence === 'number' ? Math.min(100, Math.max(0, Math.round(p.confidence))) : 0,
+      reasoning: typeof p.reasoning === 'string' ? p.reasoning : '',
+    };
   }
 
   async testConnection(userId: string): Promise<{ success: boolean; provider: string; response?: string; error?: string }> {

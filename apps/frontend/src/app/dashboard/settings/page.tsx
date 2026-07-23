@@ -8,6 +8,8 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
 import { getAiConfig, saveAiConfig, testAiConfig, type AiConfig } from '@/lib/api/ai-config';
+import { getN8nConfig, regenerateN8nApiKey } from '@/lib/api/n8n';
+import type { N8nConfig } from '@/lib/types';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 
 const schema = z.object({
@@ -49,6 +51,9 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult>(null);
+  const [n8nConfig, setN8nConfig] = useState<N8nConfig | null>(null);
+  const [newApiKey, setNewApiKey] = useState<string | null>(null);
+  const [isGeneratingKey, setIsGeneratingKey] = useState(false);
 
   const { register, handleSubmit, watch, setValue, getValues, control, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -74,6 +79,7 @@ export default function SettingsPage() {
         setValue('ollamaModel', config.ollamaModel ?? 'llama3.2');
       }
     }).finally(() => setIsLoading(false));
+    getN8nConfig().then(setN8nConfig);
   }, [token, router, setValue]);
 
   async function doSave(data: FormValues): Promise<boolean> {
@@ -131,6 +137,20 @@ export default function SettingsPage() {
       toast.error(`Không thể test kết nối: ${msg}`);
     } finally {
       setIsTesting(false);
+    }
+  }
+
+  async function onGenerateApiKey() {
+    setIsGeneratingKey(true);
+    try {
+      const { apiKey, apiKeyPrefix } = await regenerateN8nApiKey();
+      setNewApiKey(apiKey);
+      setN8nConfig({ configured: true, apiKeyPrefix });
+      toast.success('Đã tạo API key mới');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Không thể tạo API key');
+    } finally {
+      setIsGeneratingKey(false);
     }
   }
 
@@ -230,6 +250,36 @@ export default function SettingsPage() {
             </button>
           </div>
         </form>
+
+        <div className="glass-light rounded-2xl p-5 mt-4 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700">n8n Integration</h2>
+          <p className="text-xs text-gray-500">
+            Dùng API key này trong n8n workflow (HTTP Request node, header <code className="font-mono bg-white/60 px-1 rounded">Authorization: Bearer &lt;key&gt;</code>) để gửi email đến:
+          </p>
+          <code className="block text-xs font-mono bg-white/60 p-2 rounded-xl break-all">
+            {(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api')}/integrations/n8n/email-event
+          </code>
+
+          {newApiKey ? (
+            <div className="p-3 bg-amber-50/80 border border-amber-100 rounded-xl">
+              <p className="text-xs text-amber-700 font-medium mb-1">Lưu lại ngay — key này chỉ hiển thị một lần:</p>
+              <code className="block text-xs font-mono bg-white/70 p-2 rounded-lg break-all select-all">{newApiKey}</code>
+            </div>
+          ) : n8nConfig?.configured ? (
+            <p className="text-xs text-gray-500">Đã cấu hình — key hiện tại: <span className="font-mono">{n8nConfig.apiKeyPrefix}…</span></p>
+          ) : (
+            <p className="text-xs text-gray-500">Chưa cấu hình API key.</p>
+          )}
+
+          <button
+            type="button"
+            onClick={onGenerateApiKey}
+            disabled={isGeneratingKey}
+            className="px-4 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-white/60 disabled:opacity-50 transition"
+          >
+            {isGeneratingKey ? 'Đang tạo…' : n8nConfig?.configured ? 'Tạo lại API Key' : 'Tạo API Key'}
+          </button>
+        </div>
       </div>
     </DashboardShell>
   );

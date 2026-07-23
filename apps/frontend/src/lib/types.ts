@@ -84,3 +84,23 @@ export interface ApplicationDetail extends Application {
   jobMatch: JobMatch | null;
   coverLetters: CoverLetter[];
 }
+
+export interface EmailSuggestion {
+  id: string;
+  applicationId: string;
+  companyName: string;
+  jobTitle: string;
+  suggestedStatus: ApplicationStatus;
+  currentStatusSnapshot: ApplicationStatus;
+  confidence: number;
+  reasoning: string;
+  emailFrom: string;
+  emailSubject: string;
+  resolutionStatus: 'PENDING' | 'ACCEPTED' | 'DISMISSED';
+  createdAt: string;
+}
+
+export interface N8nConfig {
+  configured: boolean;
+  apiKeyPrefix: string | null;
+}

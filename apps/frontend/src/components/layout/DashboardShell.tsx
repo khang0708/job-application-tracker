@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -9,13 +10,16 @@ import {
   Settings,
   LogOut,
   Zap,
+  Inbox,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { ChatWidget } from '@/components/chat/ChatWidget';
+import { getPendingSuggestions } from '@/lib/api/n8n';
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/applications', label: 'Applications', icon: Briefcase },
+  { href: '/dashboard/suggestions', label: 'Đề xuất', icon: Inbox },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
   { href: '/dashboard/settings', label: 'AI Settings', icon: Settings },
 ];
@@ -23,7 +27,19 @@ const NAV = [
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, token } = useAuthStore();
+
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    function refresh() {
+      getPendingSuggestions().then((list) => setPendingCount(list.length)).catch(() => {});
+    }
+    refresh();
+    const interval = setInterval(refresh, 30000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   function handleLogout() {
     logout();
@@ -48,6 +64,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {NAV.map(({ href, label, icon: Icon, exact }) => {
             const active = exact ? pathname === href : pathname.startsWith(href);
+            const showBadge = href === '/dashboard/suggestions' && pendingCount > 0;
             return (
               <Link
                 key={href}
@@ -59,7 +76,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
-                {label}
+                <span className="flex-1">{label}</span>
+                {showBadge && (
+                  <span className="bg-amber-500 text-white text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none">
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </span>
+                )}
               </Link>
             );
           })}
