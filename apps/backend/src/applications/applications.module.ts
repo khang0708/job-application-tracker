@@ -19,5 +19,6 @@ import { ResumesModule } from '../resumes/resumes.module';
   ],
   providers: [ApplicationsService],
   controllers: [ApplicationsController],
+  exports: [ApplicationsService],
 })
 export class ApplicationsModule {}

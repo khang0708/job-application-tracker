@@ -10,6 +10,7 @@ import { CompaniesModule } from './companies/companies.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { AiModule } from './ai/ai.module';
 import { ChatModule } from './chat/chat.module';
+import { N8nModule } from './integrations/n8n/n8n.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ChatModule } from './chat/chat.module';
     ApplicationsModule,
     AiModule,
     ChatModule,
+    N8nModule,
   ],
   controllers: [AppController],
   providers: [AppService],
