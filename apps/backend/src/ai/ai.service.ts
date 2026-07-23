@@ -163,8 +163,13 @@ export class AiService {
       typeof p.suggestedStatus === 'string' && validStatuses.includes(p.suggestedStatus)
         ? (p.suggestedStatus as ApplicationStatus)
         : null;
+    const validApplicationIds = params.applications.map((a) => a.id);
+    const applicationId =
+      typeof p.applicationId === 'string' && validApplicationIds.includes(p.applicationId)
+        ? p.applicationId
+        : null;
     return {
-      applicationId: typeof p.applicationId === 'string' ? p.applicationId : null,
+      applicationId,
       suggestedStatus,
       confidence: typeof p.confidence === 'number' ? Math.min(100, Math.max(0, Math.round(p.confidence))) : 0,
       reasoning: typeof p.reasoning === 'string' ? p.reasoning : '',

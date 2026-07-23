@@ -84,4 +84,22 @@ describe('AiService.classifyEmail', () => {
 
     expect(result.suggestedStatus).toBeNull();
   });
+
+  it('discards an applicationId the AI hallucinated that is not in the candidate list', async () => {
+    geminiProvider.complete.mockResolvedValueOnce(JSON.stringify({
+      applicationId: 'app-does-not-exist',
+      suggestedStatus: 'INTERVIEW',
+      confidence: 90,
+      reasoning: 'test',
+    }));
+
+    const result = await service.classifyEmail({
+      emailFrom: 'hr@acme.com',
+      emailSubject: 'Update',
+      emailBody: 'body',
+      applications: [{ id: 'app-1', companyName: 'Acme', jobTitle: 'Engineer', status: 'APPLIED' }],
+    });
+
+    expect(result.applicationId).toBeNull();
+  });
 });
