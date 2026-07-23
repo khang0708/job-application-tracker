@@ -98,6 +98,42 @@ describe('EmailSuggestionsService', () => {
       expect(result.matched).toBe(false);
       expect(repo.save).not.toHaveBeenCalled();
     });
+
+    it('creates a suggestion when confidence is exactly at the threshold (60)', async () => {
+      aiService.classifyEmail.mockResolvedValueOnce({
+        applicationId: 'app-1',
+        suggestedStatus: ApplicationStatus.INTERVIEW,
+        confidence: 60,
+        reasoning: 'Borderline but matched',
+      });
+
+      const result = await service.handleEmailEvent('user-1', {
+        from: 'hr@acme.com',
+        subject: 'Interview',
+        body: 'body',
+      });
+
+      expect(result.matched).toBe(true);
+      expect(repo.save).toHaveBeenCalled();
+    });
+
+    it('does not create a suggestion when confidence is one below the threshold (59)', async () => {
+      aiService.classifyEmail.mockResolvedValueOnce({
+        applicationId: 'app-1',
+        suggestedStatus: ApplicationStatus.INTERVIEW,
+        confidence: 59,
+        reasoning: 'Borderline and rejected',
+      });
+
+      const result = await service.handleEmailEvent('user-1', {
+        from: 'hr@acme.com',
+        subject: 'Interview',
+        body: 'body',
+      });
+
+      expect(result.matched).toBe(false);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('accept', () => {
@@ -129,6 +165,53 @@ describe('EmailSuggestionsService', () => {
     it('throws NotFoundException when the suggestion does not exist', async () => {
       repo.findOne.mockResolvedValueOnce(null);
       await expect(service.accept('missing', 'user-1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('dismiss', () => {
+    it('marks the suggestion dismissed without touching the application status', async () => {
+      const suggestion = {
+        id: 'suggestion-1',
+        userId: 'user-1',
+        applicationId: 'app-1',
+        suggestedStatus: ApplicationStatus.INTERVIEW,
+        resolutionStatus: EmailSuggestionResolution.PENDING,
+      };
+      repo.findOne.mockResolvedValueOnce(suggestion);
+
+      await service.dismiss('suggestion-1', 'user-1');
+
+      expect(applicationsService.updateStatus).not.toHaveBeenCalled();
+      expect(repo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resolutionStatus: EmailSuggestionResolution.DISMISSED,
+          resolvedAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it('throws ForbiddenException when the suggestion belongs to another user', async () => {
+      repo.findOne.mockResolvedValueOnce({ id: 'suggestion-1', userId: 'other-user' });
+      await expect(service.dismiss('suggestion-1', 'user-1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFoundException when the suggestion does not exist', async () => {
+      repo.findOne.mockResolvedValueOnce(null);
+      await expect(service.dismiss('missing', 'user-1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('listPending', () => {
+    it('queries the repo for pending suggestions belonging to the user', async () => {
+      repo.find.mockResolvedValueOnce([]);
+
+      await service.listPending('user-1');
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1', resolutionStatus: EmailSuggestionResolution.PENDING },
+        }),
+      );
     });
   });
 });
