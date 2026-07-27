@@ -1031,9 +1031,11 @@ Expected: build succeeds with zero TypeScript errors (confirms no other file sti
 - [ ] **Step 13: Commit**
 
 ```bash
-git add -A apps/backend package.json
+git add apps/backend/src/resumes/resumes.controller.ts apps/backend/src/resumes/resumes.service.ts apps/backend/src/resumes/resumes.module.ts apps/backend/src/resumes/resumes.service.spec.ts apps/backend/src/applications/applications.service.ts apps/backend/src/applications/applications.module.ts apps/backend/package.json package.json
 git commit -m "feat: wire StorageService and Claude OCR into resumes/applications, remove tesseract/canvas"
 ```
+
+(`pdf-ocr.ts`, `eng.traineddata`, and `vie.traineddata` are already staged from Step 6's `git rm`.)
 
 ---
 
