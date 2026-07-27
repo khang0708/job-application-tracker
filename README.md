@@ -628,3 +628,4 @@ pnpm db:up && pnpm dev
 - **TypeORM `synchronize: true`** chỉ dùng ở development — schema tự đồng bộ với entity. Production phải dùng migrations.
 - **CV files** lưu tại `apps/backend/uploads/resumes/` (gitignored) — production nên dùng S3-compatible storage.
 - **AI không tự động chạy** khi tạo application — JD parsing và cover letter generation đều là explicit user action để tránh tốn API quota không cần thiết.
+<!-- pipeline verification test -->
