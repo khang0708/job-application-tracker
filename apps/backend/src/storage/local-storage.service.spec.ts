@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { BadRequestException } from '@nestjs/common';
 import { LocalStorageService } from './local-storage.service';
 
 describe('LocalStorageService', () => {
@@ -37,5 +38,33 @@ describe('LocalStorageService', () => {
     await service.delete(key);
 
     expect(fs.existsSync(key)).toBe(false);
+  });
+
+  it('sanitizes a save filename attempting path traversal so it cannot escape UPLOAD_DIR', async () => {
+    // save() reduces the filename to its basename before joining with UPLOAD_DIR, so a
+    // traversal filename can never actually resolve outside UPLOAD_DIR - it lands safely
+    // inside UPLOAD_DIR under a sanitized name instead of throwing.
+    const buffer = Buffer.from('malicious content');
+    const traversalFilename = '../../../../tmp/evil.txt';
+    const outsidePath = path.join(process.cwd(), '..', '..', '..', '..', 'tmp', 'evil.txt');
+
+    const { key } = await service.save(buffer, traversalFilename);
+
+    expect(key.startsWith(uploadDir + path.sep)).toBe(true);
+    expect(fs.existsSync(outsidePath)).toBe(false);
+
+    fs.unlinkSync(key);
+  });
+
+  it('rejects a read key attempting path traversal outside UPLOAD_DIR', async () => {
+    const traversalKey = path.join(uploadDir, '..', '..', '..', 'etc', 'passwd');
+
+    await expect(service.read(traversalKey)).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects a delete key attempting path traversal outside UPLOAD_DIR', async () => {
+    const traversalKey = path.join(uploadDir, '..', '..', '..', 'etc', 'passwd');
+
+    await expect(service.delete(traversalKey)).rejects.toThrow(BadRequestException);
   });
 });
