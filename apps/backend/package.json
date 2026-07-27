@@ -27,6 +27,7 @@
     "@nestjs/typeorm": "^10.0.1",
     "@types/multer": "^2.1.0",
     "@types/pdf-parse": "^1.1.5",
+    "@vercel/blob": "^2.6.1",
     "bcryptjs": "^2.4.3",
     "canvas": "^3.2.3",
     "class-transformer": "^0.5.1",
