@@ -20,17 +20,28 @@ import { N8nModule } from './integrations/n8n/n8n.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get('DB_USERNAME', 'postgres'),
-        password: configService.get('DB_PASSWORD', 'postgres'),
-        database: configService.get('DB_NAME', 'fullstack_db'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') !== 'production',
-        logging: configService.get('NODE_ENV') === 'development',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        const config: any = {
+          type: 'postgres',
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: configService.get('NODE_ENV') !== 'production',
+          logging: configService.get('NODE_ENV') === 'development',
+        };
+
+        if (databaseUrl) {
+          config.url = databaseUrl;
+          config.ssl = true;
+        } else {
+          config.host = configService.get<string>('DB_HOST', 'localhost');
+          config.port = configService.get<number>('DB_PORT', 5432);
+          config.username = configService.get<string>('DB_USERNAME', 'postgres');
+          config.password = configService.get<string>('DB_PASSWORD', 'postgres');
+          config.database = configService.get<string>('DB_NAME', 'fullstack_db');
+        }
+
+        return config;
+      },
       inject: [ConfigService],
     }),
     UsersModule,
