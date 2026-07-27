@@ -15,6 +15,7 @@
     "seed": "ts-node src/database/seeds/run-seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@google/genai": "^2.10.0",
     "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^10.3.0",
