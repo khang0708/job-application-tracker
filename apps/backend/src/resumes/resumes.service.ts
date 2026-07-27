@@ -7,12 +7,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as path from 'path';
-import * as fs from 'fs';
 import { Resume } from './resume.entity';
 import { CreateResumeDto } from './dto/create-resume.dto';
 import { extractTextFromFile } from './resumes.parser';
-import { extractPdfTextWithOcr } from './pdf-ocr';
+import { extractPdfTextWithClaude } from './pdf-claude-extract';
 import { AiService } from '../ai/ai.service';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class ResumesService {
@@ -20,6 +20,7 @@ export class ResumesService {
     @InjectRepository(Resume)
     private resumesRepository: Repository<Resume>,
     private aiService: AiService,
+    private storageService: StorageService,
   ) {}
 
   async create(
@@ -27,17 +28,17 @@ export class ResumesService {
     dto: CreateResumeDto,
     file: Express.Multer.File,
   ): Promise<Resume> {
-    const fileBuffer = fs.readFileSync(file.path);
+    const fileBuffer = file.buffer;
 
     const isGoodText = (t: string) =>
       t.length >= 100 && (t.match(/[a-zA-ZÀ-ÿ0-9]/g) ?? []).length / t.length >= 0.3;
 
     let extractedText = await extractTextFromFile(fileBuffer, file.mimetype).catch(() => '');
 
-    // Fallback for custom-font / image PDFs: local OCR via tesseract
+    // Fallback for custom-font / image PDFs: Claude Haiku reads the PDF directly
     if (!isGoodText(extractedText) && file.mimetype === 'application/pdf') {
-      const ocrText = await extractPdfTextWithOcr(fileBuffer).catch(() => '');
-      if (ocrText) extractedText = ocrText;
+      const claudeText = await extractPdfTextWithClaude(fileBuffer).catch(() => '');
+      if (claudeText) extractedText = claudeText;
     }
 
     if (!isGoodText(extractedText)) {
@@ -51,10 +52,13 @@ export class ResumesService {
 
     const hasExisting = await this.resumesRepository.existsBy({ userId });
 
+    const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e6)}${path.extname(file.originalname)}`;
+    const { key } = await this.storageService.save(fileBuffer, uniqueFilename);
+
     const resume = this.resumesRepository.create({
       userId,
       label: dto.label,
-      fileUrl: file.path,
+      fileUrl: key,
       extractedText,
       isDefault: !hasExisting,
     });
@@ -66,7 +70,7 @@ export class ResumesService {
     return this.resumesRepository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
-      select: ['id', 'label', 'fileUrl', 'isDefault', 'createdAt'],
+      select: ['id', 'label', 'isDefault', 'createdAt'],
     });
   }
 
@@ -87,9 +91,7 @@ export class ResumesService {
   async remove(id: string, userId: string): Promise<void> {
     const resume = await this.findOne(id, userId);
 
-    if (fs.existsSync(resume.fileUrl)) {
-      fs.unlinkSync(resume.fileUrl);
-    }
+    await this.storageService.delete(resume.fileUrl);
 
     await this.resumesRepository.delete(id);
 

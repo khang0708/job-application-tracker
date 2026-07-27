@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as fs from 'fs';
 import { JobApplication } from './job-application.entity';
 import { ParsedJobDescription } from './parsed-job-description.entity';
 import { CoverLetter } from './cover-letter.entity';
@@ -21,7 +20,8 @@ import { CompaniesService } from '../companies/companies.service';
 import { AiService } from '../ai/ai.service';
 import { ResumesService } from '../resumes/resumes.service';
 import { extractTextFromFile } from '../resumes/resumes.parser';
-import { extractPdfTextWithOcr } from '../resumes/pdf-ocr';
+import { StorageService } from '../storage/storage.service';
+import { extractPdfTextWithClaude } from '../resumes/pdf-claude-extract';
 
 @Injectable()
 export class ApplicationsService {
@@ -37,6 +37,7 @@ export class ApplicationsService {
     private companiesService: CompaniesService,
     private aiService: AiService,
     private resumesService: ResumesService,
+    private storageService: StorageService,
   ) {}
 
   async create(userId: string, dto: CreateApplicationDto): Promise<JobApplication> {
@@ -162,25 +163,27 @@ export class ApplicationsService {
       return ratio >= 0.3;
     };
 
-    if (!isGoodText(resumeText) && resume.fileUrl && fs.existsSync(resume.fileUrl)) {
-      const buf = fs.readFileSync(resume.fileUrl);
-      const ext = resume.fileUrl.split('.').pop()?.toLowerCase() ?? '';
+    if (!isGoodText(resumeText) && resume.fileUrl) {
+      const buf = await this.storageService.read(resume.fileUrl).catch(() => null);
+      if (buf) {
+        const ext = resume.fileUrl.split('.').pop()?.toLowerCase() ?? '';
 
-      // 1. Re-run text extraction from original file (covers DOCX + PDF with real text)
-      const mimeMap: Record<string, string> = {
-        pdf: 'application/pdf',
-        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        doc: 'application/msword',
-      };
-      if (mimeMap[ext]) {
-        const reExtracted = await extractTextFromFile(buf, mimeMap[ext]).catch(() => '');
-        if (isGoodText(reExtracted)) resumeText = reExtracted;
-      }
+        // 1. Re-run text extraction from original file (covers DOCX + PDF with real text)
+        const mimeMap: Record<string, string> = {
+          pdf: 'application/pdf',
+          docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          doc: 'application/msword',
+        };
+        if (mimeMap[ext]) {
+          const reExtracted = await extractTextFromFile(buf, mimeMap[ext]).catch(() => '');
+          if (isGoodText(reExtracted)) resumeText = reExtracted;
+        }
 
-      // 2. PDF-specific fallback: local OCR via tesseract
-      if (!isGoodText(resumeText) && ext === 'pdf') {
-        const ocrText = await extractPdfTextWithOcr(buf).catch(() => '');
-        if (ocrText) resumeText = ocrText;
+        // 2. PDF-specific fallback: Claude Haiku reads the PDF directly
+        if (!isGoodText(resumeText) && ext === 'pdf') {
+          const claudeText = await extractPdfTextWithClaude(buf).catch(() => '');
+          if (claudeText) resumeText = claudeText;
+        }
       }
     }
 

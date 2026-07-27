@@ -9,6 +9,7 @@ import { ApplicationsController } from './applications.controller';
 import { CompaniesModule } from '../companies/companies.module';
 import { AiModule } from '../ai/ai.module';
 import { ResumesModule } from '../resumes/resumes.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ResumesModule } from '../resumes/resumes.module';
     CompaniesModule,
     AiModule,
     ResumesModule,
+    StorageModule,
   ],
   providers: [ApplicationsService],
   controllers: [ApplicationsController],

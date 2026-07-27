@@ -15,20 +15,13 @@ import {
   Patch,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { ResumesService } from './resumes.service';
 import { CreateResumeDto } from './dto/create-resume.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-const storage = diskStorage({
-  destination: './uploads/resumes',
-  filename: (_, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
-    cb(null, `${unique}${extname(file.originalname)}`);
-  },
-});
+const storage = memoryStorage();
 
 @ApiTags('resumes')
 @ApiBearerAuth()
@@ -66,8 +59,10 @@ export class ResumesController {
   }
 
   @Get(':id')
-  findOne(@Request() req, @Param('id') id: string) {
-    return this.resumesService.findOne(id, req.user.id);
+  async findOne(@Request() req, @Param('id') id: string) {
+    const resume = await this.resumesService.findOne(id, req.user.id);
+    const { fileUrl, ...safeResume } = resume;
+    return safeResume;
   }
 
   @Patch(':id/default')
