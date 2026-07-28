@@ -13,9 +13,11 @@ import type { N8nConfig } from '@/lib/types';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 
 const schema = z.object({
-  provider: z.enum(['gemini', 'openai', 'ollama']),
+  provider: z.enum(['gemini', 'openai', 'anthropic', 'ollama']),
   geminiApiKey: z.string().optional().nullable(),
   openaiApiKey: z.string().optional().nullable(),
+  anthropicApiKey: z.string().optional().nullable(),
+  anthropicModel: z.string().optional().nullable(),
   ollamaBaseUrl: z.string().optional().nullable(),
   ollamaModel: z.string().optional().nullable(),
 });
@@ -34,6 +36,12 @@ const PROVIDER_INFO = {
     description: 'GPT-4o Mini — chất lượng cao, phù hợp cho cover letter tiếng Anh',
     docsUrl: 'https://platform.openai.com/api-keys',
     docsLabel: 'Lấy API key tại OpenAI Platform',
+  },
+  anthropic: {
+    label: 'Anthropic Claude',
+    description: 'Claude Haiku/Sonnet/Opus — chất lượng cao, chọn model theo nhu cầu',
+    docsUrl: 'https://console.anthropic.com/settings/keys',
+    docsLabel: 'Lấy API key tại Anthropic Console',
   },
   ollama: {
     label: 'Ollama (Local)',
@@ -61,6 +69,8 @@ export default function SettingsPage() {
       provider: 'gemini',
       geminiApiKey: '',
       openaiApiKey: '',
+      anthropicApiKey: '',
+      anthropicModel: 'claude-haiku-4-5',
       ollamaBaseUrl: 'http://localhost:11434',
       ollamaModel: 'llama3.2',
     },
@@ -75,6 +85,8 @@ export default function SettingsPage() {
         setValue('provider', config.provider);
         setValue('geminiApiKey', config.geminiApiKey ?? '');
         setValue('openaiApiKey', config.openaiApiKey ?? '');
+        setValue('anthropicApiKey', config.anthropicApiKey ?? '');
+        setValue('anthropicModel', config.anthropicModel ?? 'claude-haiku-4-5');
         setValue('ollamaBaseUrl', config.ollamaBaseUrl ?? 'http://localhost:11434');
         setValue('ollamaModel', config.ollamaModel ?? 'llama3.2');
       }
@@ -88,6 +100,8 @@ export default function SettingsPage() {
         provider: data.provider,
         geminiApiKey: data.geminiApiKey || null,
         openaiApiKey: data.openaiApiKey || null,
+        anthropicApiKey: data.anthropicApiKey || null,
+        anthropicModel: data.anthropicModel || 'claude-haiku-4-5',
         ollamaBaseUrl: data.ollamaBaseUrl || 'http://localhost:11434',
         ollamaModel: data.ollamaModel || 'llama3.2',
       });
@@ -116,6 +130,8 @@ export default function SettingsPage() {
         provider: values.provider,
         geminiApiKey: values.geminiApiKey || null,
         openaiApiKey: values.openaiApiKey || null,
+        anthropicApiKey: values.anthropicApiKey || null,
+        anthropicModel: values.anthropicModel || 'claude-haiku-4-5',
         ollamaBaseUrl: values.ollamaBaseUrl || 'http://localhost:11434',
         ollamaModel: values.ollamaModel || 'llama3.2',
       });
@@ -171,8 +187,8 @@ export default function SettingsPage() {
           {/* Provider selector */}
           <div className="glass-light rounded-2xl p-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Provider</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {(['gemini', 'openai', 'ollama'] as const).map((p) => (
+            <div className="grid grid-cols-4 gap-2">
+              {(['gemini', 'openai', 'anthropic', 'ollama'] as const).map((p) => (
                 <label
                   key={p}
                   className={`cursor-pointer rounded-xl border-2 p-3 text-center transition ${
@@ -182,7 +198,7 @@ export default function SettingsPage() {
                   <Controller name="provider" control={control} render={({ field }) => (
                     <input type="radio" className="sr-only" value={p} checked={field.value === p} onChange={() => field.onChange(p)} />
                   )} />
-                  <div className="text-lg mb-1">{p === 'gemini' ? '✦' : p === 'openai' ? '⬡' : '🦙'}</div>
+                  <div className="text-lg mb-1">{p === 'gemini' ? '✦' : p === 'openai' ? '⬡' : p === 'anthropic' ? '✳' : '🦙'}</div>
                   <div className="text-xs font-medium text-gray-700">{PROVIDER_INFO[p].label}</div>
                 </label>
               ))}
@@ -211,6 +227,20 @@ export default function SettingsPage() {
                 <input {...register('openaiApiKey')} type="password" placeholder="sk-…" className={inputCls} />
                 <p className="text-xs text-gray-400 mt-1">Để trống để dùng OPENAI_API_KEY từ server .env</p>
               </div>
+            )}
+            {provider === 'anthropic' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Anthropic API Key</label>
+                  <input {...register('anthropicApiKey')} type="password" placeholder="sk-ant-…" className={inputCls} />
+                  <p className="text-xs text-gray-400 mt-1">Để trống để dùng ANTHROPIC_API_KEY từ server .env</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Model</label>
+                  <input {...register('anthropicModel')} placeholder="claude-haiku-4-5" className={inputCls} />
+                  <p className="text-xs text-gray-400 mt-1">Gợi ý: claude-haiku-4-5 (rẻ, nhanh), claude-sonnet-5 (cân bằng), claude-opus-5 (mạnh nhất)</p>
+                </div>
+              </>
             )}
             {provider === 'ollama' && (
               <>

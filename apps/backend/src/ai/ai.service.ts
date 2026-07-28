@@ -2,6 +2,7 @@ import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/co
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { GeminiProvider } from './providers/gemini.provider';
 import { OpenaiProvider } from './providers/openai.provider';
 import { UserAiConfigService } from './user-ai-config.service';
@@ -209,6 +210,22 @@ export class AiService {
             messages: [{ role: 'user', content: p }],
           });
           return res.choices[0]?.message?.content ?? '';
+        };
+      }
+
+      case 'anthropic': {
+        const apiKey = config.anthropicApiKey || this.configService.get<string>('ANTHROPIC_API_KEY') || '';
+        if (!apiKey) throw new BadRequestException('Anthropic API key is not configured');
+        const model = config.anthropicModel || 'claude-haiku-4-5';
+        const client = new Anthropic({ apiKey });
+        return async (p) => {
+          const res = await client.messages.create({
+            model,
+            max_tokens: 4096,
+            messages: [{ role: 'user', content: p }],
+          });
+          const block = res.content[0];
+          return block?.type === 'text' ? block.text : '';
         };
       }
 

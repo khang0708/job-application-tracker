@@ -1,7 +1,7 @@
 import { IsEnum, IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class UpsertAiConfigDto {
-  @IsEnum(['gemini', 'openai', 'ollama'])
+  @IsEnum(['gemini', 'openai', 'anthropic', 'ollama'])
   provider: string;
 
   @IsOptional()
@@ -11,6 +11,14 @@ export class UpsertAiConfigDto {
   @IsOptional()
   @IsString()
   openaiApiKey?: string | null;
+
+  @IsOptional()
+  @IsString()
+  anthropicApiKey?: string | null;
+
+  @IsOptional()
+  @IsString()
+  anthropicModel?: string | null;
 
   @IsOptional()
   @IsString()

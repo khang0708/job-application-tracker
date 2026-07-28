@@ -34,6 +34,8 @@ import { N8nModule } from './integrations/n8n/n8n.module';
                 database: configService.get<string>('DB_NAME', 'fullstack_db'),
               }),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          migrations: [__dirname + '/migrations/*{.ts,.js}'],
+          migrationsRun: configService.get('NODE_ENV') === 'production',
           synchronize: configService.get('NODE_ENV') !== 'production',
           logging: configService.get('NODE_ENV') === 'development',
         };

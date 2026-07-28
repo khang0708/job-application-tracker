@@ -1,9 +1,11 @@
 import { api } from '@/lib/api';
 
 export interface AiConfig {
-  provider: 'gemini' | 'openai' | 'ollama';
+  provider: 'gemini' | 'openai' | 'anthropic' | 'ollama';
   geminiApiKey: string | null;
   openaiApiKey: string | null;
+  anthropicApiKey: string | null;
+  anthropicModel: string | null;
   ollamaBaseUrl: string | null;
   ollamaModel: string | null;
   updatedAt?: string;

@@ -9,13 +9,19 @@ export class UserAiConfig {
   userId: string;
 
   @Column({ default: 'gemini' })
-  provider: string; // 'gemini' | 'openai' | 'ollama'
+  provider: string; // 'gemini' | 'openai' | 'anthropic' | 'ollama'
 
   @Column({ nullable: true, type: 'text' })
   geminiApiKey: string | null;
 
   @Column({ nullable: true, type: 'text' })
   openaiApiKey: string | null;
+
+  @Column({ nullable: true, type: 'text' })
+  anthropicApiKey: string | null;
+
+  @Column({ nullable: true, default: 'claude-haiku-4-5' })
+  anthropicModel: string | null;
 
   @Column({ nullable: true, default: 'http://localhost:11434' })
   ollamaBaseUrl: string | null;
