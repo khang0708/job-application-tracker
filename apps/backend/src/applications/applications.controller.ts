@@ -24,6 +24,7 @@ class MatchCvDto {
 }
 import { ApplicationStatus } from './application-status.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JobApplication } from './job-application.entity';
 
 @ApiTags('applications')
 @ApiBearerAuth()
@@ -31,6 +32,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @Controller('applications')
 export class ApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
+
+  private omitResumeFileUrl(app: JobApplication): JobApplication {
+    if (app.resume) {
+      const { fileUrl, ...safeResume } = app.resume;
+      return { ...app, resume: safeResume } as JobApplication;
+    }
+    return app;
+  }
 
   @Post()
   create(@Request() req, @Body() dto: CreateApplicationDto) {
@@ -49,26 +58,29 @@ export class ApplicationsController {
   }
 
   @Get(':id')
-  findOne(@Request() req, @Param('id') id: string) {
-    return this.applicationsService.findOne(id, req.user.id);
+  async findOne(@Request() req, @Param('id') id: string) {
+    const app = await this.applicationsService.findOne(id, req.user.id);
+    return this.omitResumeFileUrl(app);
   }
 
   @Patch(':id/status')
-  updateStatus(
+  async updateStatus(
     @Request() req,
     @Param('id') id: string,
     @Body() dto: UpdateStatusDto,
   ) {
-    return this.applicationsService.updateStatus(id, req.user.id, dto);
+    const app = await this.applicationsService.updateStatus(id, req.user.id, dto);
+    return this.omitResumeFileUrl(app);
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Request() req,
     @Param('id') id: string,
     @Body() dto: UpdateApplicationDto,
   ) {
-    return this.applicationsService.update(id, req.user.id, dto);
+    const app = await this.applicationsService.update(id, req.user.id, dto);
+    return this.omitResumeFileUrl(app);
   }
 
   @Delete(':id')
