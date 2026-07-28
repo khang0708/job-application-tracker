@@ -1,14 +1,21 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { createApp } from '../src/create-app';
 
-let cachedApp: Awaited<ReturnType<typeof createApp>> | null = null;
+let appPromise: Promise<Awaited<ReturnType<typeof createApp>>> | null = null;
 
 async function getApp() {
-  if (!cachedApp) {
-    cachedApp = await createApp();
-    await cachedApp.init();
+  if (!appPromise) {
+    appPromise = createApp()
+      .then(async (app) => {
+        await app.init();
+        return app;
+      })
+      .catch((err) => {
+        appPromise = null; // allow a later request to retry instead of caching a permanent failure
+        throw err;
+      });
   }
-  return cachedApp;
+  return appPromise;
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {

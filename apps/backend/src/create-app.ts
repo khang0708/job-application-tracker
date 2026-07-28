@@ -21,14 +21,16 @@ export async function createApp(): Promise<NestExpressApplication> {
     }),
   );
 
-  const config = new DocumentBuilder()
-    .setTitle('Fullstack API')
-    .setDescription('NestJS + PostgreSQL API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Fullstack API')
+      .setDescription('NestJS + PostgreSQL API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   return app;
 }
