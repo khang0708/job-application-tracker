@@ -69,7 +69,7 @@ export default function SuggestionsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{s.companyName} — {s.jobTitle}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Từ: {s.emailFrom} · "{s.emailSubject}"</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Từ: {s.emailFrom} · &quot;{s.emailSubject}&quot;</p>
                   <p className="text-sm text-gray-700 mt-2">
                     Đề xuất chuyển: <span className="font-medium">{s.currentStatusSnapshot}</span> → <span className="font-medium text-blue-600">{s.suggestedStatus}</span>
                   </p>

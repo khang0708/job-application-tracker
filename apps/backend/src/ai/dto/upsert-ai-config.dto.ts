@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class UpsertAiConfigDto {
   @IsEnum(['gemini', 'openai', 'anthropic', 'ollama'])

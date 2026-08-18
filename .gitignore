@@ -13,6 +13,9 @@ build/
 .env.local
 .env.*.local
 
+# Vercel
+.vercel
+
 # Editor
 .vscode/
 .idea/
@@ -36,3 +39,4 @@ postgres_data/
 
 # Uploaded files
 apps/backend/uploads/
+.playwright-mcp/

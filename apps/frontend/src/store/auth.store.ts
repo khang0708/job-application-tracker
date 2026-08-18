@@ -26,16 +26,24 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     set({ isLoading: true });
-    const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', data.token);
-    set({ user: data.user, token: data.token, isLoading: false });
+    try {
+      const { data } = await api.post('/auth/login', { email, password });
+      localStorage.setItem('token', data.token);
+      set({ user: data.user, token: data.token });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   register: async (email, name, password) => {
     set({ isLoading: true });
-    const { data } = await api.post('/auth/register', { email, name, password });
-    localStorage.setItem('token', data.token);
-    set({ user: data.user, token: data.token, isLoading: false });
+    try {
+      const { data } = await api.post('/auth/register', { email, name, password });
+      localStorage.setItem('token', data.token);
+      set({ user: data.user, token: data.token });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   logout: () => {
@@ -45,8 +53,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchMe: async () => {
     set({ isLoading: true });
-    const { data } = await api.get('/auth/me');
-    set({ user: data, isLoading: false });
+    try {
+      const { data } = await api.get('/auth/me');
+      set({ user: data });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   setUser: (user) => set({ user }),

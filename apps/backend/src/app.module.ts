@@ -11,6 +11,8 @@ import { ApplicationsModule } from './applications/applications.module';
 import { AiModule } from './ai/ai.module';
 import { ChatModule } from './chat/chat.module';
 import { N8nModule } from './integrations/n8n/n8n.module';
+import { entities } from './entities';
+import { migrations } from './migrations';
 
 @Module({
   imports: [
@@ -33,8 +35,8 @@ import { N8nModule } from './integrations/n8n/n8n.module';
                 password: configService.get<string>('DB_PASSWORD', 'postgres'),
                 database: configService.get<string>('DB_NAME', 'fullstack_db'),
               }),
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          migrations: [__dirname + '/migrations/*{.ts,.js}'],
+          entities,
+          migrations,
           migrationsRun: configService.get('NODE_ENV') === 'production',
           synchronize: configService.get('NODE_ENV') !== 'production',
           logging: configService.get('NODE_ENV') === 'development',
