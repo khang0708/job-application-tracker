@@ -37,7 +37,11 @@ import { migrations } from './migrations';
               }),
           entities,
           migrations,
-          migrationsRun: configService.get('NODE_ENV') === 'production',
+          // Migrations run once as a CI deploy step (see deploy-backend.yml),
+          // not on every app boot — re-checking the migrations table on every
+          // serverless cold start adds a full extra DB round-trip for no
+          // benefit, since pending migrations are the rare exception.
+          migrationsRun: false,
           synchronize: configService.get('NODE_ENV') !== 'production',
           logging: configService.get('NODE_ENV') === 'development',
         };

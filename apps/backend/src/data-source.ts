@@ -13,6 +13,7 @@ const options: DataSourceOptions = process.env.DATABASE_URL
   ? {
       ...baseOptions,
       url: process.env.DATABASE_URL,
+      ssl: true,
     }
   : {
       ...baseOptions,

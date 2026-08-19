@@ -50,5 +50,12 @@ jobs:
       - name: Build
         run: vercel build ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: Run database migrations
+        if: github.ref == 'refs/heads/main'
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm migration:run
+
       - name: Deploy
         run: vercel deploy --prebuilt ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}

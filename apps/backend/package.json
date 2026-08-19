@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "NestJS API with PostgreSQL",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && node scripts/strip-vercel-dead-weight.js",
     "start": "node dist/main",
     "dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
