@@ -16,6 +16,15 @@ export async function createApplication(data: {
   return res.data;
 }
 
+export async function extractJdFromFile(file: File): Promise<string> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await api.post<{ text: string }>('/applications/extract-jd-file', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data.text;
+}
+
 export async function updateApplicationStatus(
   id: string,
   status: ApplicationStatus,

@@ -131,6 +131,34 @@ export class ApplicationsService {
     return grouped;
   }
 
+  async extractJdText(file: Express.Multer.File, userId: string): Promise<string> {
+    const isGoodText = (t: string) =>
+      t.length >= 100 && (t.match(/[a-zA-ZÀ-ÿ0-9]/g) ?? []).length / t.length >= 0.3;
+
+    const canUseVisionFallback = file.mimetype === 'application/pdf' || file.mimetype === 'image/png';
+
+    let text = '';
+    if (file.mimetype !== 'image/png') {
+      text = await extractTextFromFile(file.buffer, file.mimetype).catch(() => '');
+    }
+
+    if (!isGoodText(text) && canUseVisionFallback) {
+      text = await this.aiService.extractDocumentText(
+        file.buffer,
+        file.mimetype as 'application/pdf' | 'image/png',
+        userId,
+      );
+    }
+
+    if (!isGoodText(text)) {
+      throw new BadRequestException(
+        'Không thể đọc nội dung JD từ file này. Hãy thử file khác hoặc dán text trực tiếp.',
+      );
+    }
+
+    return text;
+  }
+
   async parseJd(id: string, userId: string): Promise<ParsedJobDescription> {
     const app = await this.findOne(id, userId);
 

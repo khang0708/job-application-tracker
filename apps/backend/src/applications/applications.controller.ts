@@ -9,8 +9,15 @@ import {
   Query,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
@@ -25,6 +32,8 @@ class MatchCvDto {
 import { ApplicationStatus } from './application-status.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JobApplication } from './job-application.entity';
+
+const storage = memoryStorage();
 
 @ApiTags('applications')
 @ApiBearerAuth()
@@ -44,6 +53,29 @@ export class ApplicationsController {
   @Post()
   create(@Request() req, @Body() dto: CreateApplicationDto) {
     return this.applicationsService.create(req.user.id, dto);
+  }
+
+  @Post('extract-jd-file')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', { storage }))
+  async extractJdFile(
+    @Request() req,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5 MB
+          new FileTypeValidator({
+            fileType:
+              /(application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|image\/png)/,
+            skipMagicNumbersValidation: true,
+          }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    const text = await this.applicationsService.extractJdText(file, req.user.id);
+    return { text };
   }
 
   @Get()

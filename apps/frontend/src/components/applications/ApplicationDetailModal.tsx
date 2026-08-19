@@ -12,6 +12,7 @@ import {
   updateApplication,
   updateApplicationNotes,
   analyzeCompany,
+  extractJdFromFile,
 } from '@/lib/api/applications';
 import { getResumes } from '@/lib/api/resumes';
 import type { ApplicationDetail, CoverLetter, JobMatch, ParsedJd, Resume } from '@/lib/types';
@@ -41,6 +42,7 @@ export function ApplicationDetailModal({ applicationId, onClose, onUpdate }: Pro
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ jobTitle: '', companyName: '', sourceUrl: '', jobDescription: '' });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isExtractingJd, setIsExtractingJd] = useState(false);
   const [isAnalyzingCompany, setIsAnalyzingCompany] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -192,6 +194,23 @@ export function ApplicationDetailModal({ applicationId, onClose, onUpdate }: Pro
     }
   }
 
+  async function handleJdFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsExtractingJd(true);
+    try {
+      const text = await extractJdFromFile(file);
+      setEditForm((f) => ({ ...f, jobDescription: text }));
+      toast.success('Đã trích xuất nội dung JD từ file');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Không thể trích xuất nội dung từ file';
+      toast.error(msg);
+    } finally {
+      setIsExtractingJd(false);
+      e.target.value = '';
+    }
+  }
+
   async function handleSaveNotes() {
     if (!app) return;
     setIsSavingNotes(true);
@@ -309,7 +328,19 @@ export function ApplicationDetailModal({ applicationId, onClose, onUpdate }: Pro
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Mô tả công việc</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs text-gray-500 block">Mô tả công việc</label>
+                      <label className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer font-medium">
+                        {isExtractingJd ? 'Đang trích xuất…' : 'Import từ file'}
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.png"
+                          className="sr-only"
+                          disabled={isExtractingJd}
+                          onChange={handleJdFileSelect}
+                        />
+                      </label>
+                    </div>
                     <textarea
                       value={editForm.jobDescription}
                       onChange={(e) => setEditForm((f) => ({ ...f, jobDescription: e.target.value }))}

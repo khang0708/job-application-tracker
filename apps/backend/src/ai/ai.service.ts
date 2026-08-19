@@ -93,6 +93,85 @@ export class AiService {
     return res.text?.trim() ?? '';
   }
 
+  async extractDocumentText(
+    buffer: Buffer,
+    mimetype: 'application/pdf' | 'image/png',
+    userId?: string,
+  ): Promise<string> {
+    const config = userId ? await this.userAiConfigService.findByUserId(userId) : null;
+    const provider = config?.provider ?? this.configService.get('AI_PROVIDER', 'gemini');
+    const prompt =
+      'Extract all text content from this document. Return only the raw extracted text, preserving the original structure and language. No commentary.';
+
+    switch (provider) {
+      case 'openai': {
+        if (mimetype !== 'image/png') {
+          throw new BadRequestException(
+            'OpenAI chưa hỗ trợ đọc PDF dạng ảnh scan. Hãy đổi sang Gemini/Anthropic trong AI Settings, hoặc dùng file DOCX/PDF có text thật.',
+          );
+        }
+        const apiKey = config?.openaiApiKey || this.configService.get<string>('OPENAI_API_KEY') || '';
+        if (!apiKey) throw new BadRequestException('OpenAI API key is not configured');
+        const client = new OpenAI({ apiKey });
+        const res = await client.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: `data:image/png;base64,${buffer.toString('base64')}` } },
+            ],
+          }],
+        });
+        return res.choices[0]?.message?.content?.trim() ?? '';
+      }
+
+      case 'anthropic': {
+        const apiKey = config?.anthropicApiKey || this.configService.get<string>('ANTHROPIC_API_KEY') || '';
+        if (!apiKey) throw new BadRequestException('Anthropic API key is not configured');
+        const model = config?.anthropicModel || 'claude-haiku-4-5';
+        const client = new Anthropic({ apiKey });
+        const res = await client.messages.create({
+          model,
+          max_tokens: 4096,
+          messages: [{
+            role: 'user',
+            content: [
+              mimetype === 'application/pdf'
+                ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buffer.toString('base64') } }
+                : { type: 'image', source: { type: 'base64', media_type: 'image/png', data: buffer.toString('base64') } },
+              { type: 'text', text: prompt },
+            ],
+          }],
+        });
+        const block = res.content[0];
+        return block?.type === 'text' ? block.text.trim() : '';
+      }
+
+      case 'ollama':
+        throw new BadRequestException(
+          'Ollama chưa hỗ trợ đọc PDF/ảnh. Hãy đổi sang Gemini/Anthropic/OpenAI trong AI Settings, hoặc dùng file DOCX/PDF có text thật.',
+        );
+
+      case 'gemini':
+      default: {
+        const apiKey = config?.geminiApiKey || this.configService.get<string>('GEMINI_API_KEY') || '';
+        if (!apiKey) throw new BadRequestException('Gemini API key is not configured');
+        const client = new GoogleGenAI({ apiKey });
+        const res = await client.models.generateContent({
+          model: 'gemini-2.0-flash',
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType: mimetype, data: buffer.toString('base64') } },
+            ],
+          }],
+        });
+        return res.text?.trim() ?? '';
+      }
+    }
+  }
+
   async normalizeCvText(rawText: string, userId?: string): Promise<string> {
     const complete = await this.resolveCompleter(userId);
     const result = await complete(buildCvNormalizePrompt(rawText));

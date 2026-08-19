@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { createApplication } from '@/lib/api/applications';
+import { createApplication, extractJdFromFile } from '@/lib/api/applications';
 import type { Application } from '@/lib/types';
 
 const schema = z.object({
@@ -23,13 +23,33 @@ interface Props {
 
 export function AddApplicationDialog({ onAdded }: Props) {
   const [open, setOpen] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsExtracting(true);
+    try {
+      const text = await extractJdFromFile(file);
+      setValue('jobDescription', text, { shouldValidate: true });
+      toast.success('Extracted job description from file');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Failed to extract text from file';
+      toast.error(msg);
+    } finally {
+      setIsExtracting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
 
   async function onSubmit(values: FormValues) {
     try {
@@ -118,13 +138,26 @@ export function AddApplicationDialog({ onAdded }: Props) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Job Description
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Job Description
+              </label>
+              <label className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer font-medium">
+                {isExtracting ? 'Extracting…' : 'Import from file'}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.png"
+                  className="sr-only"
+                  disabled={isExtracting}
+                  onChange={handleFileSelect}
+                />
+              </label>
+            </div>
             <textarea
               {...register('jobDescription')}
               rows={6}
-              placeholder="Paste the job description here…"
+              placeholder="Paste the job description here, or import from a PDF, DOC, DOCX, or PNG file…"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
             {errors.jobDescription && (
