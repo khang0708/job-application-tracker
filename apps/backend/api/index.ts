@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { createApp } from '../src/create-app';
+import { createApp } from '../dist/create-app';
 
 let appPromise: Promise<Awaited<ReturnType<typeof createApp>>> | null = null;
 

@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
+// Import the internal implementation directly: pdf-parse's own index.js runs a
+// module.parent-gated self-test on load, which misfires under webpack bundling.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const pdfParse = require('pdf-parse');
+const pdfParse = require('pdf-parse/lib/pdf-parse.js');
 import * as mammoth from 'mammoth';
 
 export async function extractTextFromFile(
