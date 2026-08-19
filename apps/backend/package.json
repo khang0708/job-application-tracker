@@ -43,7 +43,8 @@
     "pg": "^8.11.3",
     "reflect-metadata": "^0.1.14",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.19"
+    "typeorm": "^0.3.19",
+    "word-extractor": "^1.0.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",

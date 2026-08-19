@@ -4,6 +4,8 @@ import { BadRequestException } from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pdfParse = require('pdf-parse/lib/pdf-parse.js');
 import * as mammoth from 'mammoth';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const WordExtractor = require('word-extractor');
 
 export async function extractTextFromFile(
   buffer: Buffer,
@@ -16,12 +18,17 @@ export async function extractTextFromFile(
 
   if (
     mimetype ===
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    mimetype === 'application/msword'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ) {
     const result = await mammoth.extractRawText({ buffer });
     return result.value.trim();
   }
 
-  throw new BadRequestException('Only PDF and DOCX files are supported');
+  // Legacy binary .doc — mammoth only understands the OOXML (.docx) format.
+  if (mimetype === 'application/msword') {
+    const doc = await new WordExtractor().extract(buffer);
+    return doc.getBody().trim();
+  }
+
+  throw new BadRequestException('Only PDF, DOC, and DOCX files are supported');
 }
